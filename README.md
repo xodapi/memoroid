@@ -37,6 +37,64 @@ Memoroid — локальная библиотека и просмотрщик M
   и проверкой внешнего изменения.
 - **Офлайн.** Ни одного внешнего запроса, ни одной телеметрии.
 
+### Как пользоваться
+
+**Русский.** Самый простой путь — скачать `memoroid-single.html` из
+[раздела Releases](https://github.com/xodapi/memoroid/releases) и открыть его
+двойным щелчком. Всё работает сразу, без установки.
+
+1. **Открыть файл.** Кнопка «Открыть файл» (или `Ctrl`/`⌘` + `O`) — выберите
+   любой `.md`. Можно просто перетащить файл в окно.
+2. **Читать.** Слева — оглавление (кнопка «Структура»). Внизу — число слов,
+   время чтения и дата документа с указанием источника.
+3. **Искать.** `/` открывает поиск по текущему документу. В библиотеке —
+   отдельное поле поиска.
+4. **Редактировать.** «Редактировать» открывает текст слева и предпросмотр
+   справа. «Сохранить» пишет прямо в исходный файл, предварительно сделав
+   резервную копию. Если файл меняли извне, Memoroid предупредит.
+5. **Подключить папку.** «Подключить папку» даёт библиотеку со всеми
+   Markdown-файлами внутри. Работает в Chrome и Edge.
+6. **Упорядочить.** Сортировка по дате или имени. Фильтры: «Только избранное»
+   и «Давно не открывали».
+7. **Горячие клавиши.** `⌘O` открыть файл, `/` поиск, `Esc` закрыть меню.
+
+Если браузер не поддерживает доступ к папкам (Firefox, Safari, мобильные),
+приложение переходит в **fallback-режим**: открытие отдельных файлов и
+черновики работают, запись в исходный файл заменяется скачиванием копии.
+
+**Где мои данные.** Всё в localStorage и IndexedDB вашего браузера.
+Приложение не делает ни одного сетевого запроса. Экспорт каталога
+(`memoroid.json`) по умолчанию содержит только метаданные — полный текст
+заметок добавляется лишь после явного подтверждения.
+
+**English.** The simplest path: download `memoroid-single.html` from the
+[Releases page](https://github.com/xodapi/memoroid/releases) and double-click
+it. Everything works immediately, with no installation.
+
+1. **Open a file.** Click «Open file» (or `Ctrl`/`⌘` + `O`) and pick any
+   `.md`. You can also drag a file onto the window.
+2. **Read.** The outline is on the left («Structure»). The footer shows the
+   word count, reading time, and the document date with its source.
+3. **Search.** `/` opens in-document search. The library has its own search
+   field.
+4. **Edit.** «Edit» shows the source on the left and a live preview on the
+   right. «Save» writes to the original file after making a backup. If the
+   file changed externally, Memoroid warns you first.
+5. **Connect a folder.** «Connect folder» builds a library from every
+   Markdown file inside. Works in Chrome and Edge.
+6. **Organize.** Sort by date or name. Filters: «Favorites only» and
+   «Not opened for a while».
+7. **Shortcuts.** `⌘O` open file, `/` search, `Esc` dismiss menu.
+
+If the browser does not support folder access (Firefox, Safari, mobile), the
+app enters **fallback mode**: opening individual files and drafts still work,
+and saving produces a downloadable copy instead of writing to the original.
+
+**Where your data lives.** Everything stays in your browser's localStorage
+and IndexedDB. The app makes no network requests at all. Catalog export
+(`memoroid.json`) contains metadata only by default; full note text is
+included only after an explicit confirmation.
+
 ### Запуск
 
 Откройте `index.html` в браузере и выберите `.md`-файл. Для работы с папками

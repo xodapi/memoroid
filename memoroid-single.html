@@ -1,0 +1,1620 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#202124" />
+  <title>Memoroid — Markdown viewer</title>
+  <style>
+:root {
+  --bg: #e4e4e2;
+  --panel: #eeeeec;
+  --surface: #f8f8f6;
+  --surface-2: #e9e9e7;
+  --line: #d5d5d2;
+  --text: #242424;
+  --muted: #555553;
+  --muted-2: #666663;
+  --accent: #555553;
+  --shadow: 0 22px 60px rgba(30, 30, 28, .09);
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.sr-only { clip:rect(0 0 0 0); clip-path:inset(50%); height:1px; overflow:hidden; position:absolute; white-space:nowrap; width:1px; }
+html, body { margin: 0; min-height: 100%; }
+body { background: var(--bg); color: var(--text); font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+button { border: 0; color: inherit; font: inherit; cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.app-shell { display: grid; grid-template-columns: 246px minmax(500px, 1fr) 228px; min-height: 100vh; }
+.document-state .sidebar { display:none; }.document-state { grid-template-columns:minmax(0,1fr) 228px; }.document-state.editing-state { grid-template-columns:minmax(0,1fr); }.editing-state .outline { display:none; }
+.library-state .outline,.document-state .outline { display:none; }.document-state.structure-open { grid-template-columns:minmax(0,1fr) 228px; }.document-state.structure-open .outline { display:block; }
+.library-state .recent-section { display:none; }
+.drawer-backdrop { display:none; }.conflict-dialog { background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); color:var(--text); max-width:480px; padding:24px; }.conflict-dialog::backdrop { background:rgba(20,20,18,.35); }.conflict-dialog h2 { font:700 24px/1.2 Georgia,serif; margin:0 0 10px; }.conflict-dialog p { color:var(--muted); font-size:13px; line-height:1.6; margin:0 0 20px; }.dialog-actions { display:flex; flex-wrap:wrap; gap:7px; justify-content:flex-end; }
+.editing-state .content-area { max-width:1180px; padding-left:24px; padding-right:24px; }.editing-state .document { padding:24px 28px; box-shadow:0 12px 35px rgba(30,30,28,.05); }
+.topbar-nav,.topbar-text { background:transparent; color:var(--muted); cursor:pointer; font-size:12px; padding:4px 0; }.topbar-nav:hover,.topbar-text:hover { color:var(--text); }.draft-indicator { background:var(--surface-2); border-radius:5px; color:var(--muted); font-size:10px; padding:3px 7px; }.more-menu { background:var(--surface); border:1px solid var(--line); border-radius:9px; box-shadow:var(--shadow); min-width:210px; padding:7px; position:fixed; right:24px; top:62px; z-index:10; }.menu-group + .menu-group { border-top:1px solid var(--line); margin-top:6px; padding-top:6px; }.menu-field { display:block; padding:6px 8px; }.menu-field span { color:var(--muted); display:block; font-size:10px; margin-bottom:3px; }.menu-field input { background:var(--surface-2); border:1px solid var(--line); border-radius:5px; color:var(--text); font:12px inherit; padding:5px 7px; width:100%; }.menu-item { background:transparent; border-radius:5px; color:var(--text); display:block; padding:8px; text-align:left; width:100%; }.menu-item:hover { background:var(--surface-2); }.library-view { margin:0 auto; max-width:980px; padding:56px 48px 80px; }.library-heading { align-items:flex-end; display:flex; gap:30px; justify-content:space-between; }.library-heading h1 { font:700 43px/1.1 Georgia,serif; letter-spacing:-1px; margin:5px 0 10px; }.library-heading p { color:var(--muted); margin:0; }.library-primary-actions { display:flex; flex-shrink:0; gap:8px; }.primary-button,.secondary-button,.filter-button { border-radius:7px; cursor:pointer; font-size:12px; padding:9px 12px; }.primary-button { background:var(--text); color:var(--surface); }.secondary-button,.filter-button { background:var(--surface-2); border:1px solid var(--line); color:var(--text); }.library-controls { align-items:center; display:flex; gap:8px; margin:34px 0 8px; }.library-controls .library-search { min-width:180px; }.index-status { color:var(--muted); font-size:11px; min-height:17px; }.library-search { align-items:center; background:var(--surface-2); border:1px solid var(--line); border-radius:7px; color:var(--muted); display:flex; flex:1; gap:7px; padding:7px 10px; }.library-search input { background:transparent; border:0; color:var(--text); font:13px inherit; outline:0; width:100%; }.library-search:focus-within { outline:2px solid var(--text); outline-offset:2px; }.search-box:focus-within,.tags-box:focus-within { outline:2px solid var(--text); outline-offset:2px; }.library-result-count { color:var(--muted); font-size:11px; margin-left:auto; }.library-sort { align-items:center; color:var(--muted); display:flex; font-size:11px; gap:6px; }.library-sort select { background:var(--surface-2); border:1px solid var(--line); border-radius:7px; color:var(--text); font-size:12px; font-family:inherit; padding:7px 8px; }.filter-button[aria-pressed="true"] { background:var(--text); border-color:var(--text); color:var(--surface); }.markdown-body .task-item { list-style:none; }.markdown-body .task-item label { align-items:flex-start; display:flex; gap:8px; }.markdown-body .task-item input[type=checkbox] { accent-color:var(--text); flex:0 0 auto; height:14px; margin:3px 0 0; width:14px; }.markdown-body del { color:var(--muted); }.library-group { margin-top:26px; }.library-group h2 { border-bottom:1px solid var(--line); margin:0; padding:0 3px 8px; }.library-group-toggle { align-items:center; background:transparent; color:var(--muted); display:flex; font-size:11px; gap:7px; letter-spacing:.08em; padding:0; text-align:left; text-transform:uppercase; width:100%; }.library-group-toggle:hover { color:var(--text); }.library-group-toggle small { font-size:10px; margin-left:auto; }.library-group-chevron { color:var(--muted); font-size:14px; line-height:1; width:12px; }.library-group-list { display:grid; gap:5px; grid-template-columns:repeat(2,minmax(0,1fr)); margin-top:8px; }.library-document { align-items:center; background:var(--surface); border:1px solid var(--line); border-radius:8px; display:flex; gap:10px; padding:12px; text-align:left; }.library-document:hover { background:var(--surface-2); }.library-file-icon { color:var(--muted); font-size:9px; font-weight:700; }.library-document-copy { min-width:0; }.library-document-copy strong,.library-document-copy small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.library-document-copy strong { color:var(--text); font-size:13px; }.library-document-copy small { color:var(--muted); font-size:10px; margin-top:2px; } .library-snippet { color:var(--muted); display:block; font-size:10px; font-style:normal; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.library-arrow { color:var(--muted); font-size:18px; margin-left:auto; }.library-empty { color:var(--muted); display:grid; gap:5px; padding:50px 10px; text-align:center; }.library-empty strong { color:var(--text); }.sidebar-close { display:none; }.resurfacing-panel { background:var(--surface-2); border:1px solid var(--line); border-radius:9px; margin:18px 0 4px; padding:13px; }.resurfacing-heading { align-items:center; display:flex; justify-content:space-between; }.resurfacing-heading strong,.resurfacing-heading span { display:block; }.resurfacing-heading strong { color:var(--text); font-size:12px; }.resurfacing-heading div span { color:var(--muted); font-size:10px; margin-top:2px; }.resurfacing-badge { background:var(--surface); border-radius:4px; color:var(--muted); font-size:9px; padding:3px 6px; }.resurfacing-list { display:grid; gap:5px; grid-template-columns:repeat(2,minmax(0,1fr)); margin-top:10px; }.resurfacing-item { background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:8px 9px; text-align:left; }.resurfacing-item:hover { background:var(--bg); }.resurfacing-item strong,.resurfacing-item small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.resurfacing-item strong { color:var(--text); font-size:11px; }.resurfacing-item small { color:var(--muted); font-size:10px; margin-top:2px; }
+.sidebar { background: #dcdcd9; border-right: 1px solid var(--line); padding: 27px 15px 18px; display: flex; flex-direction: column; position:relative; z-index:2; }
+.brand { display: flex; align-items: center; gap: 11px; padding: 0 12px 28px; }
+.brand-mark { width: 33px; height: 33px; background: var(--text); color: #fff; display: grid; place-items: center; border-radius: 10px; font: 700 16px Georgia, serif; box-shadow: 0 4px 12px #bbb; }
+.brand strong { display: block; font: 700 17px Georgia, serif; letter-spacing: -.3px; }
+.brand span { color: var(--muted); display: block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.new-file { width: 100%; padding: 11px 12px; text-align: left; background: var(--text); color: white; border-radius: 9px; font-weight: 600; }
+.folder-file { width:100%; margin-top:7px; padding:8px 12px; text-align:left; background:transparent; border:1px solid var(--line); border-radius:8px; color:var(--muted); font-size:12px; }.folder-file:hover { color:var(--text); border-color:var(--muted); }
+.plus { font-size: 19px; vertical-align: -1px; margin-right: 7px; font-weight: 300; }
+kbd { color: var(--muted); background: rgba(0,0,0,.05); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; font-size: 10px; }
+.new-file kbd { float: right; color: #a9a9a7; border-color: #555; background: transparent; margin-top: 2px; }
+.sidebar-section { margin-top: 30px; }
+.section-label, .outline-title { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; padding: 0 12px 9px; }
+.nav-item, .recent-file { display: flex; align-items: center; width: 100%; gap: 10px; background: transparent; color: #555553; padding: 9px 12px; border-radius: 7px; text-align: left; }
+.nav-item.active { background: #cfcfcd; color: var(--text); font-weight: 600; }
+.nav-icon { width: 16px; color: #8b8b89; font-size: 16px; }
+.count { margin-left: auto; color: var(--muted-2); font-size: 12px; }
+.recent-section { margin-top: 32px; }
+.recent-file { font-size: 13px; margin-bottom: 2px; }
+.recent-file.selected { background: rgba(255,255,255,.35); color: var(--text); }
+.file-dot { width: 6px; height: 6px; border-radius: 50%; background: #777; }
+.recent-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-meta { margin-left: auto; font-size: 9px; color: var(--muted-2); }
+.empty-state { color: var(--muted); font-size: 11px; padding: 8px 12px; display: none; }
+.sidebar-footer { margin-top: auto; border-top: 1px solid #cdcdca; padding: 15px 12px 0; display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
+.status-dot, .live-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #767674; margin-right: 6px; }
+.app-version { display:none; }.version { color: var(--muted-2); }
+.sidebar-author { border-top:1px solid #cdcdca; color:var(--muted); display:block; font-size:11px; margin-top:9px; padding:9px 12px 0; }
+.sidebar-author strong { color:var(--text); font-weight:600; }
+.sidebar-author-links { display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:4px; }
+.sidebar-author a { color:var(--muted); text-decoration-color:var(--muted-2); text-underline-offset:2px; }
+.sidebar-author a:hover { color:var(--text); }
+.main { min-width: 0; background: var(--surface); }
+.topbar { height: 76px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; padding: 0 34px; }
+.breadcrumbs { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: 12px; }
+.breadcrumbs i { color: #b0b0ad; font-style: normal; }.breadcrumbs strong { color: var(--text); font-weight: 600; }
+.top-actions { display: flex; align-items: center; gap: 7px; }.icon-button { color: var(--muted); background: transparent; padding: 7px 9px; font-size: 17px; }.icon-button:hover { color: var(--text); }
+.avatar { width: 28px; height: 28px; border-radius: 50%; background: #c7c7c4; font-size: 11px; font-weight: 700; margin-left: 8px; }
+.content-area { max-width: 850px; margin: 0 auto; padding: 23px 40px 70px; }
+.document-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }.doc-info { color: var(--muted); font-size: 11px; }.toolbar-actions { align-items:center; display: flex; flex-wrap:wrap; gap: 5px; }.text-button { color: var(--muted); background: transparent; font-size: 11px; padding: 5px 8px; }.text-button:hover { color: var(--text); }
+.search-box { display:flex; align-items:center; gap:5px; border:1px solid var(--line); border-radius:6px; background:var(--surface-2); padding:2px 7px; color:var(--muted); }.search-box input { width:100px; border:0; outline:0; background:transparent; color:var(--text); font:inherit; font-size:11px; }.search-box input::placeholder { color:var(--muted-2); }
+.tags-box { display:flex; align-items:center; gap:5px; border:1px solid var(--line); border-radius:6px; background:var(--surface-2); padding:2px 7px; color:var(--muted); }.tags-box input { width:125px; border:0; outline:0; background:transparent; color:var(--text); font:inherit; font-size:11px; }.tags-box input::placeholder { color:var(--muted-2); }
+.drop-zone { position: relative; min-height: 700px; }.document { background: var(--surface); padding: 30px 37px; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+.eyebrow { color: var(--muted); font-size: 10px; letter-spacing: .17em; font-weight: 700; margin-bottom: 15px; }.markdown-body { max-width: 70ch; }
+.markdown-body h1 { font: 700 clamp(31px, 4vw, 43px)/1.1 Georgia, serif; letter-spacing: -1.3px; margin: 0 0 17px; }.markdown-body h2 { font: 700 24px/1.2 Georgia, serif; margin: 35px 0 10px; }.markdown-body h3 { font-size: 16px; margin: 25px 0 7px; }
+.markdown-body p { color: #60605e; font-size: 15px; line-height: 1.8; margin: 0 0 17px; }.markdown-body strong { color: var(--text); }.markdown-body a { color: var(--text); text-decoration-color: #aaa; }.markdown-body ul, .markdown-body ol { color: #60605e; padding-left: 23px; line-height: 1.85; }.markdown-body blockquote { border-left: 2px solid #888; color: var(--muted); margin: 22px 0; padding: 2px 18px; font-style: italic; }
+.markdown-body pre { background: #292927; color: #e8e8e4; border-radius: 8px; padding: 15px 17px; overflow: auto; font: 12px/1.7 ui-monospace, monospace; }.markdown-body code { background: var(--surface-2); border-radius: 4px; padding: 2px 5px; font: 12px ui-monospace, monospace; }.markdown-body pre code { background: transparent; padding: 0; }.markdown-body hr { border: 0; border-top: 1px solid var(--line); margin: 28px 0; }
+.markdown-body { overflow-wrap:anywhere; }.markdown-body .table-wrap { max-width:100%; overflow-x:auto; }.library-document { min-width:0; }.markdown-body img { display:block; max-width:100%; height:auto; border-radius:8px; margin:12px 0; }.markdown-body img.image-missing { background:var(--surface-2); border:1px dashed var(--muted); color:var(--muted); font-size:12px; line-height:1.4; min-height:54px; object-fit:contain; padding:8px; }.markdown-body table { border-collapse:collapse; width:100%; margin:18px 0; font-size:13px; }.markdown-body th,.markdown-body td { border:1px solid var(--line); padding:8px 10px; text-align:left; }.markdown-body th { background:var(--surface-2); }.markdown-body .search-hit { outline:2px solid #b8a34a; outline-offset:2px; background:rgba(224,198,75,.12); }
+.document-map { border-top:1px solid var(--line); margin-top:28px; padding-top:18px; }.map-heading { align-items:center; color:var(--text); display:flex; font-size:11px; font-weight:700; justify-content:space-between; margin-bottom:12px; }.map-badge { background:var(--surface-2); border-radius:4px; color:var(--muted); font-size:9px; font-weight:500; padding:2px 5px; }.document-stats { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:14px; }.stat-item { background:var(--surface-2); border-radius:6px; padding:7px 5px; text-align:center; }.stat-item strong,.stat-item span { display:block; }.stat-item strong { color:var(--text); font-size:14px; }.stat-item span { color:var(--muted); font-size:9px; margin-top:1px; }.document-map-bars { display:flex; flex-direction:column; gap:7px; }.map-row { align-items:center; color:var(--muted); display:grid; font-size:10px; gap:5px; grid-template-columns:minmax(52px, 1fr) 55px 22px; text-decoration:none; }.map-row:hover { color:var(--text); }.map-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.map-track { background:var(--surface-2); border-radius:3px; height:5px; overflow:hidden; }.map-fill { background:var(--accent); border-radius:3px; display:block; height:100%; }.map-value { color:var(--muted-2); font-size:9px; text-align:right; }.map-row.level-2 .map-label { padding-left:5px; }.map-row.level-3 .map-label,.map-row.level-4 .map-label { padding-left:10px; }.map-empty { color:var(--muted); font-size:10px; }
+.editor-layout { display:grid; gap:0 24px; grid-template-columns:minmax(0,1fr) minmax(0,1fr); margin-bottom:20px; }.editor-pane,.preview-pane { min-width:0; }.editor-label { color:var(--muted); display:block; font-size:10px; font-weight:700; letter-spacing:.08em; margin-bottom:6px; text-transform:uppercase; }.editor-layout textarea { background:var(--surface-2); border:1px solid var(--line); border-radius:8px; color:var(--text); font:13px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace; min-height:360px; padding:13px; resize:vertical; width:100%; }.markdown-help { background:var(--surface-2); border:1px solid var(--line); border-radius:8px; color:var(--muted); font-size:11px; margin-top:9px; padding:8px 10px; }.markdown-help summary { color:var(--text); cursor:pointer; font-size:11px; font-weight:600; }.markdown-help-grid { align-items:center; display:grid; gap:5px 9px; grid-template-columns:auto 1fr; margin-top:9px; }.markdown-help-grid code { background:var(--surface); border:1px solid var(--line); border-radius:4px; color:var(--text); font:11px ui-monospace,SFMono-Regular,Consolas,monospace; padding:3px 5px; }.markdown-help-note { font-size:10px; line-height:1.4; margin:9px 0 0; }.preview-pane { border-left:1px solid var(--line); padding-left:24px; }.editing-state .editor-layout + .markdown-body { display:none; }
+.library-button { white-space:nowrap; }
+.document-footer { border-top: 1px solid var(--line); color: var(--muted); display: flex; justify-content: space-between; margin-top: 42px; padding-top: 16px; font-size: 11px; }.outline { background: #e9e9e7; border-left: 1px solid var(--line); padding: 29px 17px; }.outline-title { padding-left: 4px; }.outline-nav a { border-left: 1px solid #d0d0cd; color: var(--muted); display: block; font-size: 12px; padding: 6px 10px; text-decoration: none; }.outline-nav a:hover, .outline-nav a.current { border-color: #555; color: var(--text); }.outline-nav a.sub { padding-left: 22px; font-size: 11px; }.shortcut-card { align-items: center; background: #dededb; border: 1px solid #d1d1ce; border-radius: 8px; display: flex; gap: 9px; margin-top: 38px; padding: 11px 10px; }.shortcut-icon { color: var(--muted); font-size: 19px; }.shortcut-card strong, .shortcut-card small { display: block; font-size: 10px; }.shortcut-card small { color: var(--muted); margin-top: 2px; }
+.drop-zone.dragging .document { outline: 2px dashed #888; outline-offset: 7px; opacity: .7; }.drop-hint { display: none; position: absolute; inset: 45% 0 auto; text-align: center; color: var(--text); font-weight: 600; pointer-events: none; }.dragging .drop-hint { display: block; }.toast { background: var(--text); border-radius: 7px; bottom: 22px; color: white; left: 50%; opacity: 0; padding: 10px 15px; pointer-events: none; position: fixed; transform: translate(-50%, 10px); transition: .2s; font-size: 12px; }.toast.show { opacity: 1; transform: translate(-50%, 0); }
+body.dark { --bg:#181817; --panel:#222220; --surface:#20201f; --surface-2:#30302e; --line:#383836; --text:#ecece7; --muted:#b7b7b1; --muted-2:#a2a29c; --shadow:0 22px 60px rgba(0,0,0,.2); } body.dark .sidebar { background:#1d1d1c; border-color:var(--line); } body.dark .outline { background:#242422; border-color:var(--line); } body.dark .nav-item.active, body.dark .shortcut-card { background:#30302e; } body.dark .main { background:var(--surface); } body.dark .markdown-body p, body.dark .markdown-body ul, body.dark .markdown-body ol { color:#b4b4ae; }
+body.dark .nav-item, body.dark .recent-file { color:var(--muted); } body.dark .toast { color:#1d1d1c; } body.dark .brand-mark { color:#1d1d1c; } body.dark .new-file { background:var(--text); color:#1d1d1c; } body.dark .new-file kbd { background:transparent; border-color:#777; color:#555; } body.dark .nav-icon { color:var(--muted-2); }
+body.focus .sidebar, body.focus .outline { display:none; } body.focus .app-shell { display:block; } body.focus .content-area { max-width:900px; }
+@media (max-width: 980px) { .app-shell { grid-template-columns: 210px minmax(0, 1fr); }.outline { display:none; } }
+@media (max-width: 900px) { .editing-state .content-area { padding-left:16px; padding-right:16px; }.editing-state .document-toolbar { align-items:flex-start; gap:8px; }.editing-state .toolbar-actions { width:100%; } } @media (max-width: 650px) { .app-shell { display:block; }.sidebar { display:none; }.document-state .sidebar { background:var(--surface); box-shadow:12px 0 35px rgba(0,0,0,.18); display:flex; height:100vh; left:0; max-width:290px; position:fixed; top:0; transform:translateX(-105%); transition:transform .2s; width:86%; z-index:20; }.document-state.drawer-open .sidebar { transform:translateX(0); }.document-state.drawer-open .drawer-backdrop { background:rgba(20,20,18,.3); border:0; display:block; inset:0; position:fixed; z-index:19; }.sidebar-close { align-self:flex-end; background:transparent; color:var(--muted); display:block; font-size:11px; margin:-18px 0 8px; padding:5px; }.topbar { height:60px; padding:0 18px; }.topbar button,.more-menu .menu-item { min-height:44px; }.topbar .icon-button { min-width:44px; }.topbar .topbar-text { min-width:44px; padding:0 10px; }.top-actions .icon-button { min-width:44px; min-height:44px; }.content-area { padding:18px 14px 45px; }.library-view { padding:30px 18px 60px; }.library-heading { align-items:stretch; display:block; }.library-heading h1 { font-size:35px; }.library-primary-actions { margin-top:22px; }.library-primary-actions button { flex:1; }.library-controls { align-items:stretch; flex-wrap:wrap; margin-top:28px; }.library-search { flex-basis:100%; }.library-result-count { margin-left:0; }.library-sort { justify-content:space-between; width:100%; }.library-controls button,.library-sort select { min-height:44px; }.library-group-list { grid-template-columns:1fr; }.document { padding:24px 20px; }.document-footer { display:block; }.document-footer span { display:block; margin-top:4px; }.document-toolbar { align-items:flex-start; flex-direction:column; gap:10px; }.toolbar-actions { flex-wrap:wrap; width:100%; }.editor-layout { display:block; }.editor-layout textarea { min-height:260px; margin-bottom:10px; }.preview-pane { border-left:0; padding-left:0; }.editor-layout + .markdown-body { border-left:0; margin-left:0; padding-left:0; }.more-menu { right:12px; top:53px; }.conflict-dialog { margin:16px; padding:20px; } }
+
+</style>
+</head>
+<body>
+  <div class="app-shell library-state" id="appShell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">M</div>
+        <div>
+          <strong>Memoroid</strong>
+          <span>markdown archive</span>
+        </div>
+      </div>
+      <button class="sidebar-close" id="sidebarCloseButton" type="button">Закрыть меню</button>
+
+      <button class="new-file" id="openButton" type="button">
+        <span class="plus">+</span> Открыть файл
+        <kbd>⌘ O</kbd>
+      </button>
+      <input id="fileInput" type="file" accept=".md,.markdown,text/markdown" hidden />
+      <button class="folder-file" id="folderButton" type="button">＋ Подключить папку</button>
+      <input id="importInput" type="file" accept="application/json,.json" hidden />
+
+      <div class="sidebar-section">
+        <div class="section-label">Рабочая область</div>
+        <button class="nav-item active" id="allNotesButton" type="button">
+          <span class="nav-icon">▤</span> Все заметки
+          <span class="count" id="noteCount">1</span>
+        </button>
+        <button class="nav-item" id="favoritesButton" type="button">
+          <span class="nav-icon">☆</span> Избранное
+          <span class="count" id="favoriteCount">0</span>
+        </button>
+        <button class="nav-item" id="demoButton" type="button">
+          <span class="nav-icon">✦</span> Пример Memoroid
+        </button>
+      </div>
+
+      <div class="sidebar-section recent-section">
+        <div class="section-label">Недавние</div>
+        <div id="recentFiles" class="recent-files">
+          <button class="recent-file selected" id="welcomeFileButton" type="button" data-demo="true">
+            <span class="file-dot"></span>
+            <span class="recent-name">welcome.md</span>
+            <span class="recent-meta">MD</span>
+          </button>
+        </div>
+        <div class="empty-state" id="emptyRecent">Открытые файлы появятся здесь</div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="status"><span class="status-dot"></span> <span id="runtimeStatus">Fallback-режим</span></div>
+        <span class="version" id="appVersion">v1.0</span>
+      </div>
+      <div class="sidebar-author">
+        Разработка: <strong>Богорад С.Б.</strong>
+        <div class="sidebar-author-links">
+          <a href="https://t.me/syntog" target="_blank" rel="noopener noreferrer">t.me/syntog</a>
+          <a href="mailto:sergey.bogorad@gmail.com">sergey.bogorad@gmail.com</a>
+        </div>
+      </div>
+    </aside>
+    <button class="drawer-backdrop" id="drawerBackdrop" type="button" aria-label="Закрыть библиотеку"></button>
+
+    <main class="main">
+      <h1 class="sr-only">Memoroid</h1>
+      <header class="topbar">
+        <div class="breadcrumbs">
+          <button class="topbar-nav" id="libraryButton" type="button">Библиотека</button>
+          <i id="crumbSeparator">/</i>
+          <strong id="fileName">Локальная библиотека</strong>
+          <span class="draft-indicator" id="draftIndicator" hidden>Есть черновик</span>
+        </div>
+        <div class="top-actions">
+          <button class="icon-button" id="themeButton" type="button" aria-label="Переключить тему" title="Переключить тему">◐</button>
+          <button class="topbar-text" id="structureButton" type="button" aria-expanded="false" hidden>Структура</button>
+          <button class="topbar-text" id="moreButton" type="button" aria-expanded="false">Ещё</button>
+        </div>
+      </header>
+
+      <section class="library-view" id="libraryView">
+        <div class="library-heading">
+          <div>
+            <div class="eyebrow">LOCAL LIBRARY</div>
+            <h1>Библиотека</h1>
+            <p>Найдите инженерный документ или подключите рабочую папку.</p>
+          </div>
+          <div class="library-primary-actions">
+            <button class="secondary-button" id="libraryFolderButton" type="button">＋ Подключить папку</button>
+            <button class="primary-button" id="libraryOpenButton" type="button">Открыть Markdown</button>
+          </div>
+        </div>
+        <div class="library-controls">
+          <label class="library-search" aria-label="Поиск по библиотеке">
+            <span aria-hidden="true">⌕</span>
+            <input id="librarySearchInput" type="search" placeholder="Поиск по имени, пути и содержимому" autocomplete="off" />
+          </label>
+          <button class="secondary-button" id="reindexButton" type="button">↻ Переиндексировать</button>
+          <button class="filter-button" id="libraryFavoritesButton" type="button" aria-pressed="false">☆ Только избранное</button>
+          <button class="filter-button" id="staleButton" type="button" aria-pressed="false">◷ Давно не открывали</button>
+          <label class="library-sort">
+            <span>Сортировка</span>
+            <select id="librarySortSelect" aria-label="Сортировка библиотеки">
+              <option value="new">Сначала новые</option>
+              <option value="old">Сначала старые</option>
+              <option value="name">По имени</option>
+            </select>
+          </label>
+          <span class="library-result-count" id="libraryResultCount"></span>
+        </div>
+        <div class="index-status" id="indexStatus" role="status">Индекс ещё не построен</div>
+        <section class="resurfacing-panel" id="resurfacingPanel" hidden aria-labelledby="resurfacingTitle">
+          <div class="resurfacing-heading">
+            <div><strong id="resurfacingTitle">Вернуться к заметкам</strong><span>Давно не открывали</span></div>
+            <span class="resurfacing-badge">локально</span>
+          </div>
+          <div class="resurfacing-list" id="resurfacingList"></div>
+        </section>
+        <div class="library-list" id="libraryList"></div>
+        <div class="library-empty" id="libraryEmpty">
+          <strong>Библиотека пока пуста</strong>
+          <span>Подключите папку или откройте отдельный Markdown-файл.</span>
+          <button class="primary-button" id="libraryDemoButton" type="button">✦ Открыть пример</button>
+        </div>
+      </section>
+
+      <section class="content-area" id="documentWorkspace" hidden>
+        <div class="document-toolbar">
+          <div class="doc-info">
+            <span class="live-dot"></span>
+            <span id="docStatus">Синхронизировано локально</span>
+          </div>
+          <div class="toolbar-actions">
+            <button class="text-button" id="favoriteButton" type="button" aria-pressed="false">☆ В избранное</button>
+            <button class="text-button" id="editButton" type="button" aria-pressed="false">✎ Редактировать</button>
+            <button class="primary-button save-button" id="saveButton" type="button" hidden>Сохранить</button>
+          </div>
+        </div>
+
+        <div class="drop-zone" id="dropZone">
+          <article class="document" id="document">
+            <div class="editor-layout" id="editorLayout" hidden>
+              <div class="editor-pane">
+                <label class="editor-label" for="editorInput">Markdown</label>
+                <textarea id="editorInput" spellcheck="false" aria-label="Редактор Markdown"></textarea>
+                <details class="markdown-help">
+                  <summary>Markdown · как оформить текст?</summary>
+                  <div class="markdown-help-grid">
+                    <code># Заголовок</code><span>Большой заголовок</span>
+                    <code>**жирный**</code><span><strong>Жирный текст</strong></span>
+                    <code>*курсив*</code><span><em>Курсивный текст</em></span>
+                    <code>- пункт</code><span>Маркированный список</span>
+                    <code>1. пункт</code><span>Нумерованный список</span>
+                    <code>&gt; цитата</code><span>Цитата</span>
+                    <code>[текст](https://...)</code><span>Ссылка</span>
+                    <code>`код`</code><span>Фрагмент кода</span>
+                  </div>
+                  <p class="markdown-help-note">Начните строку с символа и пробела. Справа результат виден сразу.</p>
+                </details>
+              </div>
+              <div class="preview-pane">
+                <div class="editor-label">Предпросмотр</div>
+                <div id="editorPreview" class="markdown-body" aria-live="polite"></div>
+              </div>
+            </div>
+            <div id="markdownOutput" class="markdown-body" aria-live="polite"></div>
+            <footer class="document-footer">
+              <span>Открыто в Memoroid</span>
+              <span id="docDate"></span>
+              <span id="wordCount">0 слов · 0 мин чтения</span>
+            </footer>
+          </article>
+          <div class="drop-hint" id="dropHint">Отпустите файл, чтобы открыть</div>
+        </div>
+      </section>
+
+      <div class="more-menu" id="moreMenu" hidden>
+        <div class="menu-group" id="documentMenuGroup">
+          <label class="menu-field" aria-label="Поиск по документу">
+            <span>Поиск</span>
+            <input id="searchInput" type="search" placeholder="В текущем документе" autocomplete="off" />
+          </label>
+          <label class="menu-field" aria-label="Теги документа">
+            <span>Теги</span>
+            <input id="tagsInput" type="text" placeholder="через запятую" />
+          </label>
+          <button class="menu-item" id="copyButton" type="button">⧉ Копировать Markdown</button>
+          <button class="menu-item" id="copyRenderedButton" type="button">⧉ Копировать без Markdown</button>
+          <button class="menu-item" id="exportDocumentButton" type="button">↗ Экспорт HTML</button>
+          <button class="menu-item" id="rawButton" type="button">{" } Показать исходник</button>
+          <button class="menu-item" id="downloadButton" type="button" hidden>↓ Скачать обновлённый файл</button>
+          <button class="menu-item" id="focusButton" type="button">⛶ Режим фокуса</button>
+        </div>
+        <div class="menu-group" id="libraryMenuGroup" hidden>
+          <button class="menu-item" id="exportButton" type="button">↑ Экспорт каталога</button>
+          <button class="menu-item" id="importButton" type="button">↓ Импорт каталога</button>
+        </div>
+      </div>
+    </main>
+
+    <aside class="outline" id="outline">
+      <div class="outline-title">В этом документе</div>
+      <nav id="outlineNav" class="outline-nav"></nav>
+      <section class="document-map" aria-labelledby="mapTitle">
+        <div class="map-heading">
+          <span id="mapTitle">Карта документа</span>
+          <span class="map-badge">локально</span>
+        </div>
+        <div id="documentStats" class="document-stats"></div>
+        <div id="documentMap" class="document-map-bars" aria-label="Объём разделов документа"></div>
+      </section>
+      <div class="shortcut-card">
+        <span class="shortcut-icon">⌘</span>
+        <div><strong>Быстрый поиск</strong><small>Нажмите <kbd>/</kbd> в любом месте</small></div>
+      </div>
+    </aside>
+  </div>
+  <dialog class="conflict-dialog" id="conflictDialog">
+    <form method="dialog">
+      <h2>Файл изменён вне Memoroid</h2>
+      <p>Исходник на диске уже отличается от открытой версии. Чтобы не потерять изменения, запись отменена.</p>
+      <div class="dialog-actions">
+        <button class="secondary-button" value="cancel">Оставить черновик</button>
+        <button class="secondary-button" id="conflictDownloadButton" value="download">Скачать черновик</button>
+        <button class="primary-button" id="conflictReloadButton" value="reload">Загрузить версию с диска</button>
+      </div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status"></div>
+  <script>window.MemoroidWasmBinary = Uint8Array.from(atob('AGFzbQEAAAABHwVgBH9/f38Bf2ADf39/AGACf38Bf2AAAGADf39/AX8DBgUAAQIDBAUEAQEgIAYJAX8BQYCAwAALBy4DBm1lbW9yeQIAE2NvbnRhaW5zX2FsbF90b2tlbnMAAAtjb3VudF93b3JkcwACCs0EBfkCAQd/QQAhBEEBIQUCQANAIAQgA08NAQJAA0ACQCADIARHDQAgAyEGDAILAkAgAiAEai0AAEEgRg0AIAQhBgwCCyAEQQFqIQQMAAsLIAYgAyAGIANLGyEEIAYhBwNAAkACQCAEIAdGDQAgAiAHai0AAEEgRw0BIAchBAsgBCAGTQ0CAkAgBCADSw0AIAIgBmohCCAEIAZrIQlBACEHA0ACQCAHIAFJDQBBACEFDAYLAkADQAJAIAEgB0cNACABIgohBwwCCwJAIAAgB2otAABBIEcNACAHQQFqIQcMAQsLIAchCgsgCiABIAogAUsbIQYCQANAAkAgBiAHRw0AIAEhBwwCCyAAIAdqLQAAQSBGDQEgB0EBaiEHDAALCyAHIAprIAlHDQACQAJAIAcgCkkNACAHIAFNDQELIAogByABEIGAgIAAAAsgACAKaiAIIAkQhICAgABFDQQMAAsLIAYgBCADEIGAgIAAAAsgB0EBaiEHDAALCwsgBQsJABCDgICAAAALcwEEfyAAIAFqIQJBACEBQQAhAwJAA0AgASEEIAAgAkYNASAALQAAIQEgAEEBaiEAAkAgAUF3aiIFQRdLDQBBACEBQQEgBXRBk4CABHENAQtBASEBIARBAXENAEEBIQEgA0EBaiIFQX8gBRshAwwACwsgAwsHAANADAALC0oBA39BACEDAkAgAkUNAAJAA0AgAC0AACIEIAEtAAAiBUcNASAAQQFqIQAgAUEBaiEBIAJBf2oiAkUNAgwACwsgBCAFayEDCyADCw=='), (char) => char.charCodeAt(0));</script>
+  <script>
+/* Memoroid core
+ * Extension points: storage, markdown renderer, commands, and UI state are
+ * deliberately kept separate so future features do not require a rewrite.
+ */
+const demoMarkdown = `# Memoroid
+
+Ваше пространство для мыслей, заметок и идей.
+
+Memoroid — простой **офлайн-просмотрщик Markdown**. Файлы остаются на этом
+компьютере и никуда не отправляются.
+
+## Как начать
+
+1. Нажмите **«Открыть файл»**.
+2. Выберите файл \`.md\` или \`.markdown\`.
+3. Или перетащите его в окно просмотра.
+
+> Хорошие заметки не должны ждать идеального момента.
+
+## Возможности
+
+- Заголовки и оглавление
+- Списки, таблицы, цитаты и блоки кода
+- Поиск по текущему документу
+- Светлая и тёмная тема
+
+---
+
+Начните с одной мысли. Остальное соберётся само.`;
+
+const STORAGE_KEY = 'memoroid.documents.v1';
+const SETTINGS_KEY = 'memoroid.settings.v1';
+const CATALOG_DB = 'memoroid.catalog.v1';
+const CATALOG_DB_VERSION = 2;
+const MAX_RECENT = 12;
+const APP_VERSION = '1.1';
+const GROUPS_KEY = 'memoroid.library.groups.v1';
+let currentMarkdown = demoMarkdown;
+let currentFileName = 'welcome.md';
+let currentPageId = null;
+let rawMode = false;
+let searchTerm = '';
+let currentFavorite = false;
+let currentTags = [];
+let favoritesOnly = false;
+let editorMode = false;
+let currentFileHandle = null;
+let currentParentHandle = null;
+let currentFileBaseline = null;
+let draftTimer = null;
+let librarySearchTerm = '';
+let libraryDrawerOpen = false;
+let collapsedLibraryGroups = readCollapsedLibraryGroups();
+let wasmWordCounter = null;
+let wasmSearchMatcher = null;
+let memorySearchIndex = null;
+let indexingInProgress = false;
+let librarySort = 'new';
+let staleOnly = false;
+let localImageUrls = [];
+const localImageCache = new Map();
+let currentLastModified = 0;
+const $ = (id) => document.getElementById(id);
+
+function createPageId() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `page-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+async function initWasmIndexer() {
+  try {
+    if (!window.MemoroidWasmBinary || typeof WebAssembly === 'undefined') return;
+    const { instance } = await WebAssembly.instantiate(window.MemoroidWasmBinary);
+    const memory = instance.exports.memory;
+    const count = instance.exports.count_words;
+    const match = instance.exports.contains_all_tokens;
+    if (!memory || !count || !match) return;
+    wasmWordCounter = (source) => {
+      const bytes = new TextEncoder().encode(source);
+      if (bytes.length > memory.buffer.byteLength) return null;
+      new Uint8Array(memory.buffer, 0, bytes.length).set(bytes);
+      return count(0, bytes.length);
+    };
+    wasmSearchMatcher = (source, query) => {
+      const sourceBytes = new TextEncoder().encode(source);
+      const queryBytes = new TextEncoder().encode(query);
+      if (sourceBytes.length + queryBytes.length > memory.buffer.byteLength) return null;
+      const buffer = new Uint8Array(memory.buffer);
+      buffer.set(sourceBytes, 0);
+      buffer.set(queryBytes, sourceBytes.length);
+      return Boolean(match(0, sourceBytes.length, sourceBytes.length, queryBytes.length));
+    };
+  } catch { /* optional acceleration; JavaScript remains the fallback */ }
+}
+function countWords(source) {
+  const normalized = normalizeSearchText(source);
+  return wasmWordCounter?.(normalized) ?? normalized.split(' ').filter(Boolean).length;
+}
+function normalizeSearchText(value) {
+  return String(value || '').normalize('NFKC').toLocaleLowerCase('ru')
+    .replace(/ё/g, 'е').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
+}
+function searchTokens(value) {
+  return normalizeSearchText(value).split(' ').filter(Boolean);
+}
+function matchesSearchText(source, query) {
+  const normalizedSource = normalizeSearchText(source);
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return true;
+  if (wasmSearchMatcher) {
+    const wasmResult = wasmSearchMatcher(normalizedSource, normalizedQuery);
+    if (wasmResult !== null) return wasmResult;
+  }
+  const sourceTokens = new Set(searchTokens(normalizedSource));
+  return searchTokens(normalizedQuery).every((token) => sourceTokens.has(token));
+}
+
+function readCollapsedLibraryGroups() {
+  try {
+    const value = JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]');
+    return new Set(Array.isArray(value) ? value.filter((name) => typeof name === 'string') : []);
+  } catch { return new Set(); }
+}
+function saveCollapsedLibraryGroups() {
+  try { localStorage.setItem(GROUPS_KEY, JSON.stringify([...collapsedLibraryGroups])); } catch {}
+}
+
+function supportsFolderAccess() {
+  return typeof window.showDirectoryPicker === 'function' && typeof window.indexedDB !== 'undefined';
+}
+function openCatalogDb() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) return reject(new Error('IndexedDB unavailable'));
+    const request = indexedDB.open(CATALOG_DB, CATALOG_DB_VERSION);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains('files')) db.createObjectStore('files', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('folders')) db.createObjectStore('folders', { keyPath: 'id' });
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+async function readCatalogFolders() {
+  const db = await openCatalogDb();
+  const folders = await new Promise((resolve, reject) => {
+    const request = db.transaction('folders', 'readonly').objectStore('folders').getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  db.close();
+  return folders;
+}
+async function saveCatalogFolder(folder) {
+  const db = await openCatalogDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction('folders', 'readwrite');
+    tx.objectStore('folders').put(folder);
+    tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+async function replaceFolderFiles(connectionId, files) {
+  const db = await openCatalogDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction('files', 'readwrite');
+    const store = tx.objectStore('files');
+    store.openCursor().onsuccess = (event) => {
+      const cursor = event.target.result;
+      if (!cursor) return;
+      if (cursor.value.connectionId === connectionId) cursor.delete();
+      cursor.continue();
+    };
+    files.forEach((file) => store.put(file));
+    tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+async function saveCatalogFiles(files) {
+  const db = await openCatalogDb();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction('files', 'readwrite');
+    files.forEach((file) => tx.objectStore('files').put(file));
+    tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+async function readCatalogFiles() {
+  const db = await openCatalogDb();
+  const files = await new Promise((resolve, reject) => {
+    const request = db.transaction('files', 'readonly').objectStore('files').getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  db.close();
+  return files;
+}
+async function walkMarkdownFiles(directory, connectionId, prefix = '', rootName = directory.name, existingById = new Map()) {
+  const found = [];
+  for await (const entry of directory.values()) {
+    if (entry.kind === 'directory') {
+      if (['.git', 'node_modules', 'build', 'dist', '.memoroid-backups'].includes(entry.name)) continue;
+      found.push(...await walkMarkdownFiles(entry, connectionId, `${prefix}${entry.name}/`, rootName, existingById));
+    } else if (/\.(md|markdown)$/i.test(entry.name)) {
+      const id = `${connectionId}:${prefix}${entry.name}`;
+      const previous = existingById.get(id);
+      let lastModified = Number(previous?.lastModified) || 0;
+      try { lastModified = (await entry.getFile()).lastModified; } catch { /* keep previous value */ }
+      found.push({ id, pageId: previous?.pageId || createPageId(), connectionId, name: entry.name, path: `${prefix}${entry.name}`, root: rootName, handle: entry, parent: directory, favorite: Boolean(previous?.favorite), tags: Array.isArray(previous?.tags) ? previous.tags : [], lastModified, indexedAt: Date.now() });
+    }
+  }
+  return found;
+}
+async function connectFolder() {
+  if (!supportsFolderAccess()) {
+    showToast('Расширенный режим недоступен. Откройте отдельный .md-файл.');
+    return;
+  }
+  try {
+    const directory = await window.showDirectoryPicker({ mode: 'read' });
+    const folders = await readCatalogFolders();
+    let folder = null;
+    for (const candidate of folders) {
+      if (candidate.handle?.isSameEntry && await candidate.handle.isSameEntry(directory)) {
+        folder = candidate; break;
+      }
+    }
+    const existed = Boolean(folder);
+    folder ||= { id: `folder:${directory.name}:${Date.now()}`, name: directory.name, handle: directory, connectedAt: Date.now() };
+    folder.lastIndexedAt = Date.now();
+    const existingFiles = await readCatalogFiles();
+    const existingById = new Map(existingFiles.filter((file) => file.connectionId === folder.id).map((file) => [file.id, file]));
+    const files = await walkMarkdownFiles(directory, folder.id, '', directory.name, existingById);
+    await saveCatalogFolder(folder);
+    await replaceFolderFiles(folder.id, files);
+    memorySearchIndex = null;
+    $('runtimeStatus').textContent = 'Расширенный режим';
+    $('docStatus').textContent = `Подключено папок: ${existed ? folders.length : folders.length + 1}; файлов: ${files.length}`;
+    await refreshRecent();
+    showToast(`Найдено файлов: ${files.length}`);
+  } catch (error) {
+    if (error?.name !== 'AbortError') showToast('Не удалось подключить папку');
+  }
+}
+async function restoreCatalogFolders() {
+  if (!supportsFolderAccess()) return;
+  let folders;
+  try { folders = await readCatalogFolders(); } catch { return; }
+  let existingFiles = [];
+  try { existingFiles = await readCatalogFiles(); } catch { /* catalog may be unavailable */ }
+  let restored = 0;
+  for (const folder of folders) {
+    try {
+      if (folder.handle.queryPermission && await folder.handle.queryPermission({ mode: 'read' }) !== 'granted') continue;
+      const existingById = new Map(existingFiles.filter((file) => file.connectionId === folder.id).map((file) => [file.id, file]));
+      const files = await walkMarkdownFiles(folder.handle, folder.id, '', folder.name, existingById);
+      await saveCatalogFolder({ ...folder, lastIndexedAt: Date.now() });
+      await replaceFolderFiles(folder.id, files);
+      restored += 1;
+    } catch { /* permission may have been revoked */ }
+  }
+  if (restored) {
+    $('runtimeStatus').textContent = 'Расширенный режим';
+    $('docStatus').textContent = `Восстановлено подключений: ${restored}`;
+    await refreshRecent();
+  }
+}
+async function openCatalogFile(entry) {
+  try {
+    if (entry.handle.queryPermission && await entry.handle.queryPermission({ mode: 'read' }) !== 'granted') {
+      await entry.handle.requestPermission({ mode: 'read' });
+    }
+    const file = await entry.handle.getFile();
+    currentFileHandle = entry.handle;
+    currentParentHandle = entry.parent || null;
+    currentFileBaseline = { lastModified: file.lastModified, size: file.size };
+    const source = await file.text();
+    const baseline = { lastModified: file.lastModified, size: file.size };
+    selectDocument(entry.path, source, {
+      pageId: entry.pageId, favorite: entry.favorite, tags: entry.tags, handle: entry.handle, parent: entry.parent, baseline, lastModified: file.lastModified
+    });
+    showToast(`Открыт ${entry.path}`);
+  } catch {
+    showToast('Нет доступа к этому файлу. Подключите папку заново.');
+  }
+}
+
+function draftKey() {
+  return `memoroid.draft.${currentFileName}`;
+}
+function readDraft(name = currentFileName) {
+  try {
+    const draft = JSON.parse(localStorage.getItem(`memoroid.draft.${name}`) || 'null');
+    return draft && typeof draft.source === 'string' ? draft : null;
+  } catch { return null; }
+}
+function saveDraft() {
+  if (!editorMode || currentFileName === 'welcome.md') return;
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(draftKey(), JSON.stringify({ source: currentMarkdown, savedAt: Date.now() }));
+      $('docStatus').textContent = 'Черновик сохранён локально';
+    } catch { /* fallback storage can be unavailable */ }
+  }, 400);
+}
+function clearDraft() {
+  try { localStorage.removeItem(draftKey()); } catch {}
+}
+function setEditorMode(enabled) {
+  editorMode = enabled;
+  $('appShell').classList.toggle('editing-state', enabled);
+  if (enabled) {
+    $('appShell').classList.remove('structure-open');
+    $('outline').hidden = true;
+    $('structureButton').setAttribute('aria-expanded', 'false');
+  }
+  $('editorLayout').hidden = !enabled;
+  $('saveButton').hidden = !enabled;
+  $('downloadButton').hidden = !enabled;
+  $('structureButton').hidden = enabled;
+  $('editButton').textContent = enabled ? '◉ Просмотр' : '✎ Редактировать';
+  $('editButton').setAttribute('aria-pressed', String(enabled));
+  if (enabled) {
+    $('editorInput').value = currentMarkdown;
+    $('editorInput').focus();
+  }
+  renderMarkdown(currentMarkdown);
+  if (enabled) {
+    $('editorPreview').innerHTML = $('markdownOutput').innerHTML;
+    $('markdownOutput').hidden = true;
+  } else {
+    $('markdownOutput').hidden = false;
+  }
+}
+async function writeBackup(content) {
+  try {
+    const backupDir = await currentParentHandle.getDirectoryHandle('.memoroid-backups', { create: true });
+    const backupPrefix = currentFileName.replace(/[\\/]/g, '_');
+    const backupName = `${backupPrefix}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}.bak`;
+    const backup = await backupDir.getFileHandle(backupName, { create: true });
+    const backupWriter = await backup.createWritable();
+    await backupWriter.write(content);
+    await backupWriter.close();
+    const pattern = new RegExp(`^${backupPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.\\d+\\.[a-z0-9]+\\.bak$`);
+    const backups = [];
+    for await (const backupEntry of backupDir.values()) {
+      if (backupEntry.kind === 'file' && pattern.test(backupEntry.name)) backups.push(backupEntry);
+    }
+    backups.sort((a, b) => a.name.localeCompare(b.name));
+    for (const oldBackup of backups.slice(0, Math.max(0, backups.length - 5))) {
+      try { await backupDir.removeEntry(oldBackup.name); } catch { /* keep backups we cannot remove */ }
+    }
+    return true;
+  } catch {
+    const proceed = !currentParentHandle || window.confirm('Не удалось создать резервную копию. Записать файл без копии?');
+    if (!proceed) {
+      saveDraft();
+      showToast('Сохранение отменено. Черновик сохранён.');
+    }
+    return proceed;
+  }
+}
+async function saveToOriginal() {
+  if (!currentFileHandle) {
+    downloadCurrentFile();
+    showToast('В fallback сохранено как новый файл');
+    return;
+  }
+  try {
+    if (currentFileHandle.queryPermission && await currentFileHandle.queryPermission({ mode: 'readwrite' }) !== 'granted') {
+      if (await currentFileHandle.requestPermission({ mode: 'readwrite' }) !== 'granted') throw new Error('permission');
+    }
+    const latest = await currentFileHandle.getFile();
+    const backupContent = await latest.text();
+    if (currentFileBaseline && (latest.lastModified !== currentFileBaseline.lastModified || latest.size !== currentFileBaseline.size)) {
+      $('docStatus').textContent = 'Обнаружено внешнее изменение';
+      saveDraft();
+      if ($('conflictDialog').showModal) $('conflictDialog').showModal();
+      else showToast('Файл изменён вне Memoroid. Черновик сохранён.');
+      return;
+    }
+    if (currentParentHandle && !await writeBackup(backupContent)) return;
+    const writable = await currentFileHandle.createWritable({ keepExistingData: true });
+    try {
+      await writable.write(currentMarkdown);
+      await writable.close();
+    } catch (error) {
+      try { await writable.abort(); } catch { /* abort is best effort */ }
+      throw error;
+    }
+    const refreshed = await currentFileHandle.getFile();
+    currentFileBaseline = { lastModified: refreshed.lastModified, size: refreshed.size };
+    currentLastModified = refreshed.lastModified;
+    memorySearchIndex = null;
+    clearDraft();
+    $('docStatus').textContent = 'Сохранено локально';
+    setEditorMode(false);
+    showToast('Файл сохранён');
+  } catch {
+    saveDraft();
+    showToast('Не удалось записать файл. Черновик сохранён.');
+  }
+}
+function downloadCurrentFile() {
+  const blob = new Blob([currentMarkdown], { type: 'text/markdown;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = currentFileName.replace(/\.(md|markdown)$/i, '') + '.updated.md';
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 0);
+}
+function downloadBlob(fileName, content, type) {
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(new Blob([content], { type }));
+  link.download = fileName;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 0);
+}
+function renderedPlainText() {
+  const clone = $('markdownOutput').cloneNode(true);
+  clone.querySelectorAll('a').forEach((link) => {
+    link.replaceWith(document.createTextNode(`${link.textContent} (${link.href})`));
+  });
+  clone.querySelectorAll('img').forEach((image) => image.replaceWith(document.createTextNode(`[Изображение: ${image.alt || 'без подписи'}]`)));
+  return clone.innerText.trim();
+}
+async function copyRenderedDocument() {
+  const plain = renderedPlainText();
+  try {
+    if (navigator.clipboard?.write && window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/plain': new Blob([plain], { type: 'text/plain' }),
+        'text/html': new Blob([$(`markdownOutput`).innerHTML], { type: 'text/html' })
+      })]);
+    } else {
+      await navigator.clipboard.writeText(plain);
+    }
+    showToast('Текст скопирован без Markdown');
+  } catch { showToast('Не удалось скопировать документ'); }
+}
+function isLocalImageSource(source) {
+  return Boolean(source) && !/^(?:https?:|data:|blob:|javascript:|#|\/|[a-zA-Z]:[\\/])/i.test(source);
+}
+async function readLocalImageBlob(root, source) {
+  if (!root) throw new Error('local-image-unavailable');
+  const normalized = String(source).replace(/\\/g, '/');
+  const parts = normalized.split('/').filter((part) => part && part !== '.');
+  if (!parts.length) throw new Error('local-image-unavailable');
+  if (parts.some((part) => part === '..')) throw new Error('local-image-unavailable');
+  let directory = root;
+  for (const part of parts.slice(0, -1)) directory = await directory.getDirectoryHandle(part);
+  const handle = await directory.getFileHandle(parts.at(-1));
+  return handle.getFile();
+}
+async function blobToDataUrl(blob) {
+  return `data:${blob.type || 'application/octet-stream'};base64,${await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+    reader.onerror = reject; reader.readAsDataURL(blob);
+  })}`;
+}
+function releaseLocalImages() {
+  localImageUrls.forEach((url) => URL.revokeObjectURL(url));
+  localImageUrls = [];
+}
+function markImageMissing(image, source, reason) {
+  if (!image.dataset.originalAlt) image.dataset.originalAlt = image.alt || '';
+  const altText = image.dataset.originalAlt;
+  image.classList.add('image-missing');
+  image.removeAttribute('src');
+  image.dataset.localSource = source;
+  image.alt = altText ? `${altText} — ${reason}: ${source}` : `${reason}: ${source}`;
+  image.title = image.alt;
+}
+async function hydrateLocalImages() {
+  releaseLocalImages();
+  const images = [...$('markdownOutput').querySelectorAll('img')];
+  for (const image of images) {
+    const source = image.dataset.localSource || image.getAttribute('src') || '';
+    if (!isLocalImageSource(source)) continue;
+    image.dataset.localSource = source;
+    if (!currentParentHandle) {
+      markImageMissing(image, source, 'Локальное изображение недоступно без папки');
+      continue;
+    }
+    try {
+      let blob = localImageCache.get(source);
+      if (!blob) { blob = await readLocalImageBlob(currentParentHandle, source); localImageCache.set(source, blob); }
+      const url = URL.createObjectURL(blob);
+      localImageUrls.push(url);
+      image.src = url;
+      image.classList.remove('image-missing');
+      if (image.dataset.originalAlt) image.alt = image.dataset.originalAlt;
+      image.title = `Локальный файл: ${source}`;
+    } catch {
+      markImageMissing(image, source, 'Файл не найден');
+    }
+  }
+}
+async function inlineExportImages(root, container) {
+  const images = [...(container || $('markdownOutput')).querySelectorAll('img')];
+  let unresolved = 0;
+  for (const image of images) {
+    const source = image.dataset.localSource || image.getAttribute('src') || '';
+    if (!isLocalImageSource(source)) continue;
+    try {
+      image.src = await blobToDataUrl(await readLocalImageBlob(root, source));
+      image.classList.remove('image-missing');
+    } catch { unresolved += 1; }
+  }
+  return unresolved;
+}
+async function exportDocumentHtml() {
+  const output = $('markdownOutput').cloneNode(true);
+  const unresolved = await inlineExportImages(currentParentHandle, output);
+  const title = escapeHtml(currentFileName.replace(/\.(md|markdown)$/i, ''));
+  const html = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>body{background:#f8f8f6;color:#242424;font:16px/1.7 system-ui,sans-serif;margin:0;padding:40px}main{max-width:760px;margin:auto}h1,h2,h3{line-height:1.2}img{max-width:100%;height:auto;border-radius:8px}pre{background:#292927;color:#eee;padding:16px;border-radius:8px;overflow:auto}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#eee}footer{border-top:1px solid #ddd;color:#666;margin-top:40px;padding-top:14px;font-size:12px}</style></head><body><main><h1>${title}</h1>${output.innerHTML}<footer>Экспортировано из Memoroid · ${new Date().toLocaleDateString('ru-RU')}</footer></main></body></html>`;
+  downloadBlob(`${currentFileName.replace(/\.(md|markdown)$/i, '')}.html`, html, 'text/html;charset=utf-8');
+  showToast(unresolved ? `HTML экспортирован, изображений не встроено: ${unresolved}` : 'HTML экспортирован');
+}
+function formatAge(timestamp) {
+  const days = Math.max(1, Math.floor((Date.now() - timestamp) / 86400000));
+  return days > 3650 ? 'давно' : `${days} дн. назад`;
+}
+function renderResurfacing() {
+  const panel = $('resurfacingPanel');
+  const list = $('resurfacingList');
+  if (!panel || !list) return;
+  const cutoff = Date.now() - 30 * 86400000;
+  const forgotten = readDocuments().filter((doc) => Number(doc.openedAt) && doc.openedAt < cutoff).slice(0, 4);
+  panel.hidden = !forgotten.length || Boolean(librarySearchTerm) || staleOnly;
+  list.replaceChildren();
+  forgotten.forEach((doc) => {
+    const item = document.createElement('button');
+    item.className = 'resurfacing-item'; item.type = 'button';
+    item.innerHTML = '<strong></strong><small></small>';
+    item.querySelector('strong').textContent = doc.name;
+    item.querySelector('small').textContent = formatAge(doc.openedAt);
+    item.onclick = () => selectDocument(doc.name, doc.source, doc);
+    list.append(item);
+  });
+}
+
+function listDrafts() {
+  const drafts = [];
+  try {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key?.startsWith('memoroid.draft.')) continue;
+      const draft = readDraft(key.slice('memoroid.draft.'.length));
+      if (draft) drafts.push({ name: key.slice('memoroid.draft.'.length), ...draft });
+    }
+  } catch { return drafts; }
+  return drafts;
+}
+function downloadJson(fileName, value) {
+  const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json;charset=utf-8' });
+  const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = fileName;
+  link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 0);
+}
+async function exportLibrary(withSources = false) {
+  const recent = readDocuments().map((doc) =>
+    ({ name: doc.name, pageId: doc.pageId || createPageId(), favorite: Boolean(doc.favorite), tags: Array.isArray(doc.tags) ? doc.tags : [], openedAt: doc.openedAt, ...(withSources ? { source: doc.source } : {}) }));
+  let catalog = [];
+  try {
+    catalog = (await readCatalogFiles()).map(({ id, pageId, name, path, root, favorite, tags, indexedAt }) =>
+      ({ id, pageId: pageId || createPageId(), name, path, root, favorite: Boolean(favorite), tags: Array.isArray(tags) ? tags : [], indexedAt }));
+  } catch { /* IndexedDB is optional */ }
+  downloadJson('memoroid.json', {
+    format: 'memoroid-library', version: 1, exportedAt: new Date().toISOString(), includesSources: withSources,
+    recent, drafts: withSources ? listDrafts() : listDrafts().map(({ name, savedAt }) => ({ name, savedAt })), catalog
+  });
+  showToast(withSources ? 'Каталог с текстом заметок экспортирован' : 'Каталог экспортирован (без текста заметок)');
+}
+async function importLibrary(file) {
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (data?.format !== 'memoroid-library' || data.version !== 1 || !Array.isArray(data.recent) || !Array.isArray(data.drafts)) {
+      throw new Error('format');
+    }
+    const importedRecent = data.recent.filter((doc) => doc && typeof doc.name === 'string' && typeof doc.source === 'string')
+      .map((doc) => ({ ...doc, pageId: typeof doc.pageId === 'string' && doc.pageId ? doc.pageId : createPageId(), favorite: Boolean(doc.favorite), tags: Array.isArray(doc.tags) ? doc.tags.slice(0, 10) : [], openedAt: Number(doc.openedAt) || Date.now() }));
+    const merged = [...importedRecent, ...readDocuments()].filter((doc, index, all) => all.findIndex((item) => item.name === doc.name) === index);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(merged.slice(0, MAX_RECENT))); } catch { throw new Error('storage'); }
+    data.drafts.filter((draft) => draft && typeof draft.name === 'string' && typeof draft.source === 'string').forEach((draft) => {
+      try { localStorage.setItem(`memoroid.draft.${draft.name}`, JSON.stringify({ source: draft.source, savedAt: Number(draft.savedAt) || Date.now() })); } catch {}
+    });
+    if (Array.isArray(data.catalog) && window.indexedDB) {
+      const existing = await readCatalogFiles();
+      const metadata = new Map(data.catalog.filter((entry) => entry?.id).map((entry) => [entry.id, entry]));
+      await saveCatalogFiles(existing.map((entry) => metadata.has(entry.id) ? {
+        ...entry, pageId: typeof metadata.get(entry.id).pageId === 'string' && metadata.get(entry.id).pageId ? metadata.get(entry.id).pageId : (entry.pageId || createPageId()), favorite: Boolean(metadata.get(entry.id).favorite), tags: Array.isArray(metadata.get(entry.id).tags) ? metadata.get(entry.id).tags.slice(0, 10) : []
+      } : entry));
+    }
+    await refreshRecent();
+    memorySearchIndex = null;
+    showToast('Каталог импортирован');
+  } catch { showToast('Не удалось импортировать: нужен memoroid.json версии 1'); }
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[char]));
+}
+
+function inline(text) {
+  const codes = [];
+  const autolinks = [];
+  let result = escapeHtml(text);
+  result = result.replace(/`([^`]+)`/g, (match, code) => {
+    codes.push(code);
+    return `\u0000CODE${codes.length - 1}\u0000`;
+  });
+  result = result.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (match, alt, source) => {
+    if (!/^(?:javascript:|data:)/i.test(source)) {
+      return `\u0000IMG\u0000${source}\u0000IMG\u0000${alt}\u0000IMG\u0000`;
+    }
+    return match;
+  });
+  result = result.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (match, label, url) => {
+    autolinks.push(`<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`);
+    return `\u0000LINK${autolinks.length - 1}\u0000`;
+  });
+  result = result.replace(/(^|[\s(])(https?:\/\/[^\s<)"']+)(?![^<]*>)/g, (match, prefix, url) => {
+    const trimmed = url.replace(/[.,;:!?]+$/, '');
+    const tail = url.slice(trimmed.length);
+    autolinks.push(`<a href="${trimmed}" target="_blank" rel="noopener noreferrer">${trimmed}</a>`);
+    return `${prefix}\u0000LINK${autolinks.length - 1}\u0000${tail}`;
+  });
+  result = result.replace(/\*\*([^*]+)\*\*|__([^_]+)__/g, '<strong>$1$2</strong>');
+  result = result.replace(/(^|[\s(])\*([^*\s][^*]*)\*(?=[\s.,!?)]|$)/g, '$1<em>$2</em>');
+  result = result.replace(/(^|[\s(])_([^_\s][^_]*)_(?=[\s.,!?)]|$)/g, '$1<em>$2</em>');
+  result = result.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+  result = result.replace(/\u0000LINK(\d+)\u0000/g, (match, index) => autolinks[Number(index)]);
+  result = result.replace(/\u0000IMG\u0000([^\u0000]*)\u0000IMG\u0000([^\u0000]*)\u0000IMG\u0000/g,
+    (match, source, alt) => `<img src="${escapeHtml(source)}" alt="${alt}" loading="lazy">`);
+  result = result.replace(/\u0000CODE(\d+)\u0000/g, (match, index) => `<code>${codes[Number(index)]}</code>`);
+  return result;
+}
+
+function slugify(value, used) {
+  const base = value.toLocaleLowerCase('ru').trim()
+    .replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '') || 'section';
+  const count = (used[base] || 0) + 1;
+  used[base] = count;
+  return count === 1 ? base : `${base}-${count}`;
+}
+
+function renderDocumentMap(source, headings) {
+  const plain = source.replace(/```[\s\S]*?```/g, ' ').replace(/[`*_>#|[\]()]/g, ' ');
+  const words = countWords(plain);
+  const stats = [
+    ['Разделы', headings.length],
+    ['Слов', words],
+    ['Код', (source.match(/```/g) || []).length / 2],
+    ['Таблицы', (source.match(/^\s*\|.+\|/gm) || []).length ? 1 : 0],
+    ['Ссылки', (source.match(/\[[^\]]+\]\(https?:\/\//g) || []).length],
+    ['Изображения', (source.match(/!\[[^\]]*\]\(https?:\/\//g) || []).length]
+  ];
+  $('documentStats').innerHTML = stats.map(([label, value]) =>
+    `<div class="stat-item"><strong>${escapeHtml(value)}</strong><span>${label}</span></div>`).join('');
+
+  const sections = headings.map((heading, index) => {
+    const start = source.indexOf(heading.raw);
+    const end = index + 1 < headings.length ? source.indexOf(headings[index + 1].raw, start + heading.raw.length) : source.length;
+    const sectionWords = source.slice(start, end).replace(/[`*_>#|[\]()]/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+    return { ...heading, sectionWords };
+  });
+  const maxWords = Math.max(...sections.map((section) => section.sectionWords), 1);
+  $('documentMap').innerHTML = sections.length ? sections.slice(0, 8).map((section) => `
+    <a class="map-row level-${Math.min(section.level, 4)}" href="#${section.id}" title="Перейти к разделу">
+      <span class="map-label">${escapeHtml(section.text)}</span>
+      <span class="map-track"><span class="map-fill" style="width:${Math.max(8, Math.round(section.sectionWords / maxWords * 100))}%"></span></span>
+      <span class="map-value">${section.sectionWords}</span>
+    </a>`).join('') : '<span class="map-empty">В документе нет заголовков</span>';
+}
+
+function compileSearchPattern(term) {
+  const text = String(term || '').trim();
+  if (!text) return null;
+  try {
+    return new RegExp(text.replace(/[.*+?^${}()|[\]\\/-]/g, '\\$&'), 'iu');
+  } catch {
+    const literal = text.replace(/[.*+?^${}()|[\]\\/-]/g, '\\$&');
+    try { return new RegExp(literal, 'iu'); } catch { return null; }
+  }
+}
+function toggleTaskLine(source, lineIndex) {
+  const lines = String(source).replace(/\r/g, '').split('\n');
+  const line = lines[lineIndex];
+  if (line === undefined) return null;
+  const updated = line.replace(/^(\s*(?:[-*+])\s+\[)([ xX])(\]\s*)/, (match, prefix, state, suffix) =>
+    `${prefix}${state.toLowerCase() === 'x' ? ' ' : 'x'}${suffix}`);
+  if (updated === line) return null;
+  lines[lineIndex] = updated;
+  return lines.join('\n');
+}
+function attachTaskHandlers() {
+  $('markdownOutput').querySelectorAll('input[type=checkbox][data-task-line]').forEach((checkbox) => {
+    checkbox.disabled = false;
+    checkbox.onchange = async () => {
+      const updated = toggleTaskLine(currentMarkdown, Number(checkbox.dataset.taskLine));
+      if (!updated) { renderMarkdown(currentMarkdown); return; }
+      currentMarkdown = updated;
+      if (editorMode && $('editorInput')) $('editorInput').value = updated;
+      renderMarkdown(updated);
+      saveDocument(currentFileName, updated);
+      saveDraft();
+      if (currentFileHandle) {
+        try {
+          if (currentFileHandle.queryPermission && await currentFileHandle.queryPermission({ mode: 'readwrite' }) !== 'granted') {
+            if (await currentFileHandle.requestPermission({ mode: 'readwrite' }) !== 'granted') throw new Error('permission');
+          }
+          if (currentParentHandle) await writeBackup(await (await currentFileHandle.getFile()).text());
+          const writable = await currentFileHandle.createWritable({ keepExistingData: true });
+          await writable.write(updated);
+          await writable.close();
+          const refreshed = await currentFileHandle.getFile();
+          currentFileBaseline = { lastModified: refreshed.lastModified, size: refreshed.size };
+          currentLastModified = refreshed.lastModified;
+          memorySearchIndex = null;
+          showToast('Задача обновлена и записана в файл');
+          return;
+        } catch {
+          showToast('Задача обновлена, но запись в файл не удалась. Черновик сохранён.');
+          return;
+        }
+      }
+      showToast('Задача обновлена. Чтобы сохранить в файл, нажмите «Сохранить»');
+    };
+  });
+}
+function renderMarkdown(source) {
+  const lines = source.replace(/\r/g, '').split('\n');
+  const output = [];
+  const headings = [];
+  const usedSlugs = {};
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!line.trim()) { i += 1; continue; }
+    const fence = line.match(/^\s*```([^\s]*)\s*$/);
+    if (fence) {
+      const language = escapeHtml(fence[1] || '');
+      const code = [];
+      i += 1;
+      while (i < lines.length && !/^\s*```\s*$/.test(lines[i])) code.push(lines[i++]);
+      if (i < lines.length) i += 1;
+      output.push(`<pre><code class="language-${language}">${escapeHtml(code.join('\n'))}</code></pre>`);
+      continue;
+    }
+    const heading = line.match(/^(#{1,6})\s+(.+?)\s*#*\s*$/);
+    if (heading) {
+      const level = heading[1].length;
+      const id = slugify(heading[2], usedSlugs);
+      headings.push({ level, id, text: heading[2], raw: line });
+      output.push(`<h${level} id="${id}">${inline(heading[2])}</h${level}>`);
+      i += 1; continue;
+    }
+    if (/^\s*([-*_])(?:\s*\1){2,}\s*$/.test(line)) {
+      output.push('<hr>'); i += 1; continue;
+    }
+    if (/^\s*>/.test(line)) {
+      const quote = [];
+      while (i < lines.length && /^\s*>/.test(lines[i])) quote.push(lines[i++].replace(/^\s*>\s?/, ''));
+      output.push(`<blockquote>${quote.map(inline).join('<br>')}</blockquote>`); continue;
+    }
+    const tableCells = (row) => row.trim().replace(/^\||\|$/g, '').split('|').map((cell) => cell.trim());
+    if (/^\s*\|?.+\|.+\|?\s*$/.test(line) && i + 1 < lines.length &&
+        /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/.test(lines[i + 1]) &&
+        tableCells(line).length === tableCells(lines[i + 1]).length) {
+      const header = tableCells(line); i += 2; const rows = [];
+      while (i < lines.length && lines[i].includes('|') && lines[i].trim()) rows.push(tableCells(lines[i++]));
+      output.push(`<div class="table-wrap"><table><thead><tr>${header.map((c) => `<th scope="col">${inline(c)}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${header.map((_, n) => `<td>${inline(row[n] || '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
+      continue;
+    }
+    const listMatch = line.match(/^(\s*)([-*+]|\d+\.)\s+(.+)/);
+    if (listMatch) {
+      const listKind = (m) => (/^\d/.test(m) ? 'ol' : 'ul');
+      const indentOf = (s) => s.replace(/\t/g, '  ').length;
+      const baseIndent = indentOf(listMatch[1]);
+      const baseDepth = 0;
+      const docLines = lines;
+      const renderList = (startIndex, depth, parentTag) => {
+        const items = [];
+        let cursor = startIndex;
+        while (cursor < docLines.length) {
+          const item = docLines[cursor].match(/^(\s*)([-*+]|\d+\.)\s+(.*)/);
+          if (!item) break;
+          const currentIndent = indentOf(item[1]);
+          const currentDepth = Math.min(Math.max(0, Math.floor((currentIndent - baseIndent) / 2)), 4);
+          if (currentDepth < depth) break;
+          if (currentDepth > depth) {
+            const child = renderList(cursor, currentDepth, null);
+            const last = items.pop() || '';
+            const reopen = last.replace(/<\/li>$/, '');
+            items.push(reopen ? `${reopen}${child.html}</li>` : child.html);
+            cursor = child.cursor;
+            continue;
+          }
+          let value = item[3];
+          let task = null;
+          if (!/^\d/.test(item[2])) task = value.match(/^\[([ xX])\]\s+(.*)/);
+          if (task) {
+            const checked = task[1].toLowerCase() === 'x';
+            value = `<label><input type="checkbox" data-task-line="${cursor}"${checked ? ' checked' : ''}><span>${inline(task[2])}</span></label>`;
+          } else value = inline(value);
+          const tag = listKind(item[2]);
+          items.push(`<li${task ? ' class="task-item"' : ''}>${value}</li>`);
+          cursor += 1;
+          const next = cursor < docLines.length ? docLines[cursor].match(/^(\s*)([-*+]|\d+\.)\s+/) : null;
+          if (!next) break;
+          const nextDepth = Math.min(Math.max(0, Math.floor((indentOf(next[1]) - baseIndent) / 2)), 4);
+          if (nextDepth < depth) break;
+        }
+        const tag = parentTag || (startIndex < docLines.length ? listKind(docLines[startIndex].match(/^\s*([-*+]|\d+\.)\s+/)[1]) : 'ul');
+        return { html: `<${tag}>${items.join('')}</${tag}>`, cursor };
+      };
+      const list = renderList(i, baseDepth, listKind(listMatch[2]));
+      output.push(list.html);
+      i = list.cursor; continue;
+    }
+    const paragraph = [line]; i += 1;
+    while (i < lines.length && lines[i].trim() && !/^(#{1,6})\s|^\s*```|^\s*[-*+]\s|^\s*\d+\.\s|^\s*>|^\s*\|/.test(lines[i])) paragraph.push(lines[i++]);
+    output.push(`<p>${paragraph.map(inline).join('<br>')}</p>`);
+  }
+  $('markdownOutput').innerHTML = output.join('');
+  $('markdownOutput').querySelectorAll('img').forEach((image) => {
+    image.addEventListener('error', () => {
+      image.classList.add('image-missing');
+      image.title = `Локальное изображение не найдено: ${image.dataset.localSource || image.getAttribute('src') || ''}`;
+    }, { once: true });
+  });
+  attachTaskHandlers();
+  const visible = compileSearchPattern(searchTerm);
+  $('markdownOutput').querySelectorAll('p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6').forEach((node) => {
+    node.classList.toggle('search-hit', Boolean(visible && visible.test(node.textContent)));
+  });
+  $('outlineNav').innerHTML = headings.map((h) =>
+    `<a href="#${h.id}" class="${h.level > 1 ? 'sub' : ''}">${escapeHtml(h.text)}</a>`).join('');
+  renderDocumentMap(source, headings);
+  const words = countWords(source);
+  $('wordCount').textContent = `${words} слов · ${Math.max(1, Math.ceil(words / 265))} мин чтения`;
+  const dateStamp = documentDate({ name: currentFileName, source: currentMarkdown, lastModified: currentLastModified, openedAt: Date.now() });
+  const dateSource = documentDateSource({ name: currentFileName, source: currentMarkdown, lastModified: currentLastModified, openedAt: Date.now() });
+  if ($('docDate')) $('docDate').textContent = dateSource ? `${formatDocumentDate(dateStamp)} · ${dateSource}` : '';
+  if (editorMode && $('editorPreview')) $('editorPreview').innerHTML = $('markdownOutput').innerHTML;
+  void hydrateLocalImages();
+}
+
+function readDocuments() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+}
+function saveDocument(name, source) {
+  const previous = readDocuments().find((doc) => doc.name === name) || {};
+  const isCurrent = name === currentFileName;
+  const docs = readDocuments().filter((doc) => doc.name !== name);
+  docs.unshift({
+    ...previous,
+    pageId: previous.pageId || currentPageId || createPageId(),
+    name,
+    source,
+    favorite: isCurrent ? currentFavorite : Boolean(previous.favorite),
+    tags: isCurrent ? currentTags : (Array.isArray(previous.tags) ? previous.tags : []),
+    lastModified: isCurrent ? (currentLastModified || Number(previous.lastModified) || 0) : (Number(previous.lastModified) || 0),
+    openedAt: Date.now()
+  });
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(docs.slice(0, MAX_RECENT))); } catch { /* file:// may deny storage */ }
+}
+function showToast(message) {
+  const toast = $('toast'); toast.textContent = message; toast.classList.add('show');
+  clearTimeout(showToast.timer); showToast.timer = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+function selectDocument(name, source, metadata = {}) {
+  clearTimeout(draftTimer);
+  const draft = readDraft(name);
+  currentFileName = name; currentMarkdown = source; currentPageId = metadata.pageId || createPageId(); rawMode = false; searchTerm = '';
+  editorMode = false;
+  currentFileHandle = metadata.handle || null;
+  currentParentHandle = metadata.parent || null;
+  currentFileBaseline = metadata.baseline || null;
+  const stored = readDocuments().find((doc) => doc.name === name) || {};
+  currentFavorite = metadata.favorite === undefined ? Boolean(stored.favorite) : Boolean(metadata.favorite);
+  currentTags = Array.isArray(metadata.tags) ? metadata.tags : (Array.isArray(stored.tags) ? stored.tags : []);
+  currentLastModified = Number(metadata.lastModified) || Number(stored.lastModified) || 0;
+  localImageCache.clear(); releaseLocalImages();
+  if (draft && draft.source !== source && window.confirm(`Восстановить локальный черновик для «${name}»?`)) {
+    currentMarkdown = draft.source;
+  }
+  $('fileName').textContent = name; document.title = `${name} — Memoroid`; $('docStatus').textContent = draft && draft.source !== source ? 'Черновик доступен локально' : 'Файл открыт локально';
+  $('draftIndicator').hidden = !(draft && draft.source !== source);
+  $('searchInput').value = ''; $('tagsInput').value = currentTags.join(', ');
+  $('rawButton').textContent = '{ } Исходник'; updateFavoriteButton();
+  setEditorMode(false);
+  if (name !== 'welcome.md') saveDocument(name, source);
+  showDocument();
+}
+function updateFavoriteButton() {
+  const button = $('favoriteButton');
+  button.textContent = currentFavorite ? '★ В избранном' : '☆ В избранное';
+  button.setAttribute('aria-pressed', String(currentFavorite));
+}
+function saveCurrentMetadata() {
+  if (currentFileName === 'welcome.md') return;
+  saveDocument(currentFileName, currentMarkdown); refreshRecent();
+}
+async function refreshRecent() {
+  const list = $('recentFiles'); list.replaceChildren();
+  const docs = readDocuments();
+  const visibleDocs = favoritesOnly ? docs.filter((doc) => doc.favorite) : docs;
+  const demoItem = document.createElement('button');
+  demoItem.className = 'recent-file'; demoItem.type = 'button';
+  demoItem.innerHTML = '<span class="file-dot"></span><span class="recent-name"></span><span class="recent-meta">DEMO</span>';
+  demoItem.querySelector('.recent-name').textContent = 'welcome.md';
+  demoItem.title = 'Пример Memoroid';
+  demoItem.onclick = () => { favoritesOnly = false; selectDocument('welcome.md', demoMarkdown); refreshRecent(); };
+  list.append(demoItem);
+  visibleDocs.forEach((doc) => {
+    const item = document.createElement('button'); item.className = 'recent-file'; item.type = 'button';
+    item.innerHTML = '<span class="file-dot"></span><span class="recent-name"></span><span class="recent-meta">MD</span>';
+    item.querySelector('.recent-name').textContent = doc.name;
+    item.title = doc.tags?.length ? `Теги: ${doc.tags.join(', ')}` : doc.name;
+    item.onclick = () => selectDocument(doc.name, doc.source, doc);
+    list.append(item);
+  });
+  try {
+    const catalogFiles = favoritesOnly ? (await readCatalogFiles()).filter((file) => file.favorite) : await readCatalogFiles();
+    catalogFiles.forEach((entry) => {
+      const item = document.createElement('button'); item.className = 'recent-file catalog-file'; item.type = 'button';
+      item.innerHTML = '<span class="file-dot"></span><span class="recent-name"></span><span class="recent-meta">CAT</span>';
+      item.querySelector('.recent-name').textContent = entry.path;
+      item.title = `${entry.root || 'Папка'} / ${entry.path}`;
+      item.onclick = () => openCatalogFile(entry);
+      list.append(item);
+    });
+  } catch { /* catalog is optional in fallback mode */ }
+  $('noteCount').textContent = String(docs.length + 1);
+  $('favoriteCount').textContent = String(docs.filter((doc) => doc.favorite).length);
+  $('emptyRecent').textContent = favoritesOnly ? 'В избранном пока ничего нет' : 'Открытые файлы появятся здесь';
+  $('emptyRecent').hidden = list.children.length > 1;
+  renderLibrary();
+}
+
+async function getLibraryEntries() {
+  const entries = readDocuments().map((doc) => ({ ...doc, root: 'Открытые файлы', path: doc.name, source: doc.source, kind: 'recent' }));
+  try {
+    const catalog = await readCatalogFiles();
+    entries.push(...catalog.map((entry) => ({ ...entry, kind: 'catalog' })));
+  } catch { /* IndexedDB is optional */ }
+  return entries;
+}
+const FRONT_MATTER_PATTERN = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/;
+
+function parseDateValue(value) {
+  const text = String(value ?? '').trim().replace(/^["']|["']$/g, '').trim();
+  if (!text) return null;
+  const ru = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(text);
+  if (ru) {
+    const stamp = Date.parse(`${ru[3]}-${ru[2]}-${ru[1]}T00:00:00`);
+    return Number.isNaN(stamp) ? null : stamp;
+  }
+  const iso = /^(\d{4})-(\d{2})-(\d{2})(?:[T ].*)?$/.exec(text);
+  if (iso) {
+    const stamp = Date.parse(`${iso[1]}-${iso[2]}-${iso[3]}T00:00:00`);
+    return Number.isNaN(stamp) ? null : stamp;
+  }
+  return null;
+}
+function frontMatterMeta(source) {
+  const empty = { present: false, title: '', date: null, tags: [] };
+  const text = typeof source === 'string' ? source.replace(/^\uFEFF/, '') : '';
+  const match = FRONT_MATTER_PATTERN.exec(text);
+  if (!match) return empty;
+  const meta = { present: true, title: '', date: null, tags: [] };
+  let collectingTags = false;
+  const pushTags = (value) => {
+    value.split(/[,;]/).map((tag) => tag.trim().replace(/^[-*]\s*/, '').replace(/^["'#]|["']$/g, '').trim())
+      .filter(Boolean).forEach((tag) => { if (!meta.tags.includes(tag)) meta.tags.push(tag); });
+  };
+  match[1].split(/\r?\n/).forEach((rawLine) => {
+    const line = rawLine.replace(/\s+#.*$/, '').trim();
+    if (!line || line.startsWith('#')) return;
+    const listItem = /^[-*]\s+(.+)$/.exec(line);
+    if (listItem) {
+      if (collectingTags) pushTags(listItem[1].replace(/^["']|["']$/g, ''));
+      return;
+    }
+    const separator = line.indexOf(':');
+    if (separator === -1) { collectingTags = false; return; }
+    const key = line.slice(0, separator).trim().toLocaleLowerCase('en');
+    const value = line.slice(separator + 1).trim().replace(/^["']|["']$/g, '').trim();
+    collectingTags = false;
+    if (key === 'title' && !meta.title && value) meta.title = value;
+    else if (key === 'date' && meta.date === null && value) meta.date = parseDateValue(value);
+    else if (key === 'tags' || key === 'keywords') {
+      if (value) pushTags(value.replace(/^\[|\]$/g, ''));
+      collectingTags = true;
+    }
+  });
+  meta.tags = meta.tags.slice(0, 12);
+  return meta;
+}
+function filenameDate(name) {
+  const match = /(\d{4})-(\d{2})-(\d{2})/.exec(String(name || ''));
+  if (!match) return null;
+  const stamp = Date.parse(`${match[1]}-${match[2]}-${match[3]}T00:00:00`);
+  return Number.isNaN(stamp) ? null : stamp;
+}
+function documentDate(entry) {
+  const meta = frontMatterMeta(entry.source);
+  if (meta.date) return meta.date;
+  const fromName = filenameDate(entry.name);
+  if (fromName) return fromName;
+  return Number(entry.lastModified) || Number(entry.openedAt) || Number(entry.indexedAt) || 0;
+}
+function formatDocumentDate(timestamp) {
+  if (!timestamp) return 'дата неизвестна';
+  return new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(timestamp);
+}
+function documentDateSource(entry) {
+  if (frontMatterMeta(entry.source).date) return 'из front matter';
+  if (filenameDate(entry.name)) return 'из имени файла';
+  if (Number(entry.lastModified)) return 'из даты изменения';
+  if (Number(entry.openedAt)) return 'из даты открытия';
+  return null;
+}
+function documentTitle(entry) {
+  const meta = frontMatterMeta(entry.source);
+  const baseName = String(entry.name || '').replace(/\.(md|markdown)$/i, '');
+  return meta.title && meta.title !== baseName && meta.title !== entry.name ? meta.title : '';
+}
+function searchableEntryText(entry) {
+  const meta = frontMatterMeta(entry.source);
+  return [entry.name, entry.path, entry.root, meta.title, ...meta.tags, ...(entry.tags || []), entry.source || ''].join(' ');
+}
+function snippetFor(entry, query) {
+  const sourceLines = (entry.source || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const queryTokens = searchTokens(query);
+  const matchingLine = sourceLines.find((line) => {
+    const lineTokens = new Set(searchTokens(line));
+    return queryTokens.some((token) => lineTokens.has(token));
+  });
+  if (!matchingLine) return `${entry.name} · совпадение в имени, пути или тегах`;
+  return matchingLine.length > 150 ? `${matchingLine.slice(0, 147)}…` : matchingLine;
+}
+function formatIndexTime(timestamp) {
+  return timestamp ? new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(timestamp) : 'не индексирован';
+}
+async function reindexLibrary() {
+  if (indexingInProgress) return;
+  indexingInProgress = true;
+  $('reindexButton').disabled = true;
+  $('indexStatus').textContent = 'Переиндексация…';
+  try {
+    const entries = await getLibraryEntries();
+    const indexed = [];
+    let skipped = 0;
+    for (const entry of entries) {
+      if (entry.kind === 'catalog' && entry.handle) {
+        try {
+          const file = await entry.handle.getFile();
+          entry.source = await file.text();
+          entry.indexedAt = Date.now();
+        } catch { skipped += 1; continue; }
+      }
+      indexed.push({ ...entry, pageId: entry.pageId || createPageId(), indexedAt: Date.now() });
+    }
+    memorySearchIndex = { entries: indexed, builtAt: Date.now(), skipped };
+    $('indexStatus').textContent = skipped ? `Индекс обновлён, пропущено: ${skipped}` : `Индекс обновлён: ${indexed.length} документов`;
+  } catch {
+    $('indexStatus').textContent = 'Не удалось построить индекс';
+  } finally {
+    indexingInProgress = false;
+    $('reindexButton').disabled = false;
+    renderLibrary();
+  }
+}
+async function renderLibrary(recentEntries = null) {
+  const list = $('libraryList');
+  if (!list) return;
+  renderResurfacing();
+  const liveEntries = recentEntries
+    ? [...recentEntries.map((entry) => ({ ...entry, root: 'Открытые файлы', path: entry.name, kind: 'recent' }))]
+    : await getLibraryEntries();
+  if (librarySearchTerm && !memorySearchIndex) {
+    list.replaceChildren();
+    $('libraryEmpty').hidden = false;
+    $('libraryEmpty').querySelector('strong').textContent = 'Индекс ещё не построен';
+    $('libraryEmpty').querySelector('span').textContent = 'Нажмите «Переиндексировать», чтобы искать по содержимому.';
+    $('libraryResultCount').textContent = '';
+    $('indexStatus').textContent = 'Нажмите «Переиндексировать», чтобы искать по содержимому';
+    return;
+  }
+  const entries = librarySearchTerm && memorySearchIndex ? memorySearchIndex.entries : liveEntries;
+  const dateCache = new Map();
+  const entryDate = (entry) => {
+    if (!dateCache.has(entry)) dateCache.set(entry, documentDate(entry));
+    return dateCache.get(entry);
+  };
+  const staleCutoff = Date.now() - 90 * 86400000;
+  const compareEntries = (a, b) => {
+    if (librarySort === 'name') return a.name.localeCompare(b.name, 'ru');
+    const delta = entryDate(a) - entryDate(b);
+    return librarySort === 'old' ? delta : -delta;
+  };
+  const filtered = entries.filter((entry) => {
+    const haystack = searchableEntryText(entry);
+    return (!librarySearchTerm || matchesSearchText(haystack, librarySearchTerm)) &&
+      (!favoritesOnly || entry.favorite) &&
+      (!staleOnly || (entryDate(entry) > 0 && entryDate(entry) < staleCutoff));
+  }).slice().sort(compareEntries);
+  list.replaceChildren();
+  const groups = new Map();
+  filtered.forEach((entry) => {
+    const group = groups.get(entry.root || 'Без папки') || [];
+    group.push(entry); groups.set(entry.root || 'Без папки', group);
+  });
+  groups.forEach((groupEntries, root) => {
+    const section = document.createElement('section');
+    section.className = 'library-group';
+    const collapsed = collapsedLibraryGroups.has(root) && !librarySearchTerm;
+    section.innerHTML = `<h2><button class="library-group-toggle" type="button" aria-expanded="${!collapsed}"><span>▱</span><span class="library-group-name">${escapeHtml(root)}</span><small>${groupEntries.length}</small><span class="library-group-chevron" aria-hidden="true">${collapsed ? '＋' : '−'}</span></button></h2>`;
+    const groupList = document.createElement('div'); groupList.className = 'library-group-list';
+    groupList.hidden = collapsed;
+    section.querySelector('.library-group-toggle').onclick = () => {
+      const isCollapsed = !groupList.hidden;
+      groupList.hidden = isCollapsed;
+      section.querySelector('.library-group-toggle').setAttribute('aria-expanded', String(!isCollapsed));
+      section.querySelector('.library-group-chevron').textContent = isCollapsed ? '＋' : '−';
+      if (isCollapsed) collapsedLibraryGroups.add(root);
+      else collapsedLibraryGroups.delete(root);
+      saveCollapsedLibraryGroups();
+    };
+    groupEntries.forEach((entry) => {
+      const item = document.createElement('button'); item.className = 'library-document'; item.type = 'button';
+      item.innerHTML = '<span class="library-file-icon">MD</span><span class="library-document-copy"><strong></strong><small></small><em class="library-snippet"></em></span><span class="library-arrow">›</span>';
+      const title = documentTitle(entry);
+      item.querySelector('strong').textContent = entry.name;
+      item.querySelector('small').textContent = `${title ? `${title} · ` : ''}${entry.path === entry.name ? 'Markdown' : entry.path} · ${formatDocumentDate(entryDate(entry))}`;
+      item.querySelector('.library-snippet').textContent = librarySearchTerm ? snippetFor(entry, librarySearchTerm) : '';
+      item.onclick = () => entry.kind === 'catalog' ? openCatalogFile(entry) : selectDocument(entry.name, entry.source, entry);
+      groupList.append(item);
+    });
+    section.append(groupList); list.append(section);
+  });
+  const filtersActive = Boolean(librarySearchTerm) || favoritesOnly || staleOnly;
+  $('libraryEmpty').querySelector('strong').textContent = filtersActive ? 'Ничего не найдено' : 'Библиотека пока пуста';  $('libraryEmpty').querySelector('span').textContent = filtersActive ? 'Измените фильтры или строку поиска.' : 'Подключите папку или откройте отдельный Markdown-файл.';
+  $('libraryDemoButton').hidden = filtersActive;
+  $('libraryEmpty').hidden = filtered.length > 0;
+  $('libraryResultCount').textContent = filtered.length ? `${filtered.length} документов${memorySearchIndex ? ` · индекс ${formatIndexTime(memorySearchIndex.builtAt)}` : ''}` : '';
+}
+function showLibrary() {
+  $('appShell').classList.add('library-state');
+  $('appShell').classList.remove('document-state', 'editing-state', 'structure-open');
+  $('libraryView').hidden = false; $('documentWorkspace').hidden = true;
+  $('fileName').textContent = 'Локальная библиотека'; $('crumbSeparator').hidden = true; $('draftIndicator').hidden = true;
+  $('structureButton').hidden = true; $('documentMenuGroup').hidden = true; $('libraryMenuGroup').hidden = false;
+  $('outline').hidden = true;
+  $('moreButton').hidden = false; renderLibrary();
+  toggleLibraryDrawer(false);
+}
+function showDocument() {
+  $('appShell').classList.add('document-state');
+  $('appShell').classList.remove('library-state', 'editing-state', 'structure-open');
+  $('libraryView').hidden = true; $('documentWorkspace').hidden = false;
+  $('crumbSeparator').hidden = false; $('documentMenuGroup').hidden = false; $('libraryMenuGroup').hidden = true;
+  $('outline').hidden = true;
+  $('moreButton').hidden = false; $('structureButton').hidden = editorMode;
+}
+function toggleLibraryDrawer(open) {
+  libraryDrawerOpen = open;
+  $('appShell').classList.toggle('drawer-open', open);
+  const mobile = window.matchMedia('(max-width: 650px)').matches;
+  const drawer = mobile && document.querySelector('#appShell').classList.contains('document-state');
+  if (drawer) $('sidebar').setAttribute('aria-hidden', String(!open));
+  else $('sidebar').removeAttribute('aria-hidden');
+  $('drawerBackdrop').hidden = !open;
+}
+function openFile(file) {
+  if (!file || !/\.(md|markdown)$/i.test(file.name)) return showToast('Выберите файл .md или .markdown');
+  currentFileHandle = null; currentParentHandle = null; currentFileBaseline = null;
+  const reader = new FileReader();
+  reader.onload = () => { selectDocument(file.name, String(reader.result || ''), { lastModified: file.lastModified }); refreshRecent(); showToast(`Открыт ${file.name}`); };
+  reader.onerror = () => showToast('Не удалось прочитать файл');
+  reader.readAsText(file);
+}
+
+renderMarkdown(demoMarkdown); initWasmIndexer().then(() => renderMarkdown(currentMarkdown)); refreshRecent(); restoreCatalogFolders(); showLibrary();
+try {
+  const settings = readSettings();
+  if (settings.dark) document.body.classList.add('dark');
+  if (['new', 'old', 'name'].includes(settings.sort)) { librarySort = settings.sort; $('librarySortSelect').value = settings.sort; }
+} catch {}
+if ($('appVersion')) $('appVersion').textContent = `v${APP_VERSION}`;
+function readSettings() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') || {}; } catch { return {}; }
+}
+function saveSettings(patch) {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...readSettings(), ...patch })); } catch { /* file:// may deny storage */ }
+}
+$('openButton').onclick = () => $('fileInput').click();
+$('folderButton').onclick = connectFolder;
+$('exportButton').onclick = () => {
+  const count = readDocuments().length;
+  if (!count || window.confirm(`Включить в memoroid.json полный текст ${count} заметок и все черновики? Файл будет содержать копию ваших записей в открытом виде.`)) exportLibrary(true);
+  else if (count) exportLibrary(false);
+};
+$('importButton').onclick = () => $('importInput').click();
+$('importInput').onchange = (e) => { importLibrary(e.target.files[0]); e.target.value = ''; };
+$('libraryDemoButton').onclick = () => { favoritesOnly = false; selectDocument('welcome.md', demoMarkdown); refreshRecent(); };
+$('libraryFolderButton').onclick = connectFolder;
+$('libraryOpenButton').onclick = () => $('fileInput').click();
+$('reindexButton').onclick = reindexLibrary;
+$('libraryButton').onclick = () => {
+  if (window.matchMedia('(max-width: 650px)').matches) toggleLibraryDrawer(true);
+  else showLibrary();
+};
+$('librarySearchInput').oninput = (e) => { librarySearchTerm = e.target.value.trim().toLocaleLowerCase(); renderLibrary(); };
+$('libraryFavoritesButton').onclick = () => {
+  favoritesOnly = !favoritesOnly;
+  $('libraryFavoritesButton').setAttribute('aria-pressed', String(favoritesOnly));
+  $('libraryFavoritesButton').textContent = favoritesOnly ? '★ Только избранное' : '☆ Только избранное';
+  renderLibrary(); refreshRecent();
+};
+$('staleButton').onclick = () => {
+  staleOnly = !staleOnly;
+  $('staleButton').setAttribute('aria-pressed', String(staleOnly));
+  renderLibrary();
+};
+$('librarySortSelect').onchange = (event) => { librarySort = event.target.value; saveSettings({ sort: librarySort }); renderLibrary(); };
+$('sidebarCloseButton').onclick = () => toggleLibraryDrawer(false);
+$('drawerBackdrop').onclick = () => toggleLibraryDrawer(false);
+$('conflictDownloadButton').onclick = () => downloadCurrentFile();
+$('conflictReloadButton').onclick = async () => {
+  try {
+    const file = await currentFileHandle.getFile();
+    currentMarkdown = await file.text();
+    currentFileBaseline = { lastModified: file.lastModified, size: file.size };
+    if (editorMode) $('editorInput').value = currentMarkdown;
+    renderMarkdown(currentMarkdown);
+    $('docStatus').textContent = 'Загружена версия с диска';
+  } catch { showToast('Не удалось загрузить версию с диска'); }
+};
+$('moreButton').onclick = () => {
+  const menu = $('moreMenu'); const opening = menu.hidden;
+  menu.hidden = !opening; $('moreButton').setAttribute('aria-expanded', String(opening));
+};
+document.addEventListener('click', (event) => {
+  if (!$('moreMenu').hidden && !event.target.closest('#moreMenu, #moreButton')) {
+    $('moreMenu').hidden = true; $('moreButton').setAttribute('aria-expanded', 'false');
+  }
+});
+$('structureButton').onclick = () => {
+  const outline = document.querySelector('.outline'); const opening = outline.hidden;
+  outline.hidden = !opening; $('structureButton').setAttribute('aria-expanded', String(opening));
+  $('appShell').classList.toggle('structure-open', opening);
+};
+$('fileInput').onchange = (e) => { openFile(e.target.files[0]); e.target.value = ''; };
+$('allNotesButton').onclick = () => { favoritesOnly = false; $('favoritesButton').classList.remove('active'); $('favoritesButton').setAttribute('aria-pressed', 'false'); showLibrary(); };
+$('welcomeFileButton').onclick = () => { favoritesOnly = false; selectDocument('welcome.md', demoMarkdown); refreshRecent(); };
+$('demoButton').onclick = () => { favoritesOnly = false; selectDocument('welcome.md', demoMarkdown); refreshRecent(); };
+$('editButton').onclick = () => setEditorMode(!editorMode);
+$('editorInput').oninput = (e) => { currentMarkdown = e.target.value; renderMarkdown(currentMarkdown); saveDraft(); };
+$('saveButton').onclick = saveToOriginal;
+$('downloadButton').onclick = downloadCurrentFile;
+$('favoritesButton').onclick = () => { favoritesOnly = !favoritesOnly; $('favoritesButton').classList.toggle('active', favoritesOnly); $('favoritesButton').setAttribute('aria-pressed', String(favoritesOnly)); refreshRecent(); };
+$('favoriteButton').onclick = () => { currentFavorite = !currentFavorite; updateFavoriteButton(); saveCurrentMetadata(); showToast(currentFavorite ? 'Добавлено в избранное' : 'Удалено из избранного'); };
+$('tagsInput').onchange = (e) => { currentTags = e.target.value.split(',').map((tag) => tag.trim().replace(/^#/, '')).filter(Boolean).slice(0, 10); e.target.value = currentTags.join(', '); saveCurrentMetadata(); showToast('Теги сохранены локально'); };
+$('themeButton').onclick = () => { document.body.classList.toggle('dark'); saveSettings({ dark: document.body.classList.contains('dark') }); };
+$('focusButton').onclick = () => document.body.classList.toggle('focus');
+$('copyButton').onclick = async () => { try { await navigator.clipboard.writeText(currentMarkdown); showToast('Markdown скопирован'); } catch { showToast('Скопируйте текст вручную из режима «Исходник»'); } };
+$('copyRenderedButton').onclick = copyRenderedDocument;
+$('exportDocumentButton').onclick = exportDocumentHtml;
+$('rawButton').onclick = () => { rawMode = !rawMode; $('markdownOutput').textContent = rawMode ? currentMarkdown : ''; $('rawButton').textContent = rawMode ? '◉ Просмотр' : '{ } Исходник'; if (!rawMode) renderMarkdown(currentMarkdown); };
+$('searchInput').oninput = (e) => { searchTerm = e.target.value.trim(); renderMarkdown(currentMarkdown); };
+const dropZone = $('dropZone');
+['dragenter', 'dragover'].forEach((event) => dropZone.addEventListener(event, (e) => { e.preventDefault(); dropZone.classList.add('dragging'); }));
+['dragleave', 'drop'].forEach((event) => dropZone.addEventListener(event, (e) => { e.preventDefault(); dropZone.classList.remove('dragging'); }));
+dropZone.addEventListener('drop', (e) => openFile(e.dataTransfer.files[0]));
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'o') { e.preventDefault(); $('fileInput').click(); }
+  if (e.key === '/' && document.activeElement !== $('searchInput')) {
+    e.preventDefault();
+    const menu = $('moreMenu');
+    menu.hidden = false; $('moreButton').setAttribute('aria-expanded', 'true');
+    $('searchInput').focus();
+  }
+  if (e.key === 'Escape') { toggleLibraryDrawer(false); $('moreMenu').hidden = true; $('moreButton').setAttribute('aria-expanded', 'false'); }
+});
+
+</script>
+</body>
+</html>
+

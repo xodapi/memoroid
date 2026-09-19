@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#202124" />
+  <title>Memoroid — Markdown viewer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell library-state" id="appShell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">M</div>
+        <div>
+          <strong>Memoroid</strong>
+          <span>markdown archive</span>
+        </div>
+      </div>
+      <button class="sidebar-close" id="sidebarCloseButton" type="button">Закрыть меню</button>
+
+      <button class="new-file" id="openButton" type="button">
+        <span class="plus">+</span> Открыть файл
+        <kbd>⌘ O</kbd>
+      </button>
+      <input id="fileInput" type="file" accept=".md,.markdown,text/markdown" hidden />
+      <button class="folder-file" id="folderButton" type="button">＋ Подключить папку</button>
+      <input id="importInput" type="file" accept="application/json,.json" hidden />
+
+      <div class="sidebar-section">
+        <div class="section-label">Рабочая область</div>
+        <button class="nav-item active" id="allNotesButton" type="button">
+          <span class="nav-icon">▤</span> Все заметки
+          <span class="count" id="noteCount">1</span>
+        </button>
+        <button class="nav-item" id="favoritesButton" type="button">
+          <span class="nav-icon">☆</span> Избранное
+          <span class="count" id="favoriteCount">0</span>
+        </button>
+        <button class="nav-item" id="demoButton" type="button">
+          <span class="nav-icon">✦</span> Пример Memoroid
+        </button>
+      </div>
+
+      <div class="sidebar-section recent-section">
+        <div class="section-label">Недавние</div>
+        <div id="recentFiles" class="recent-files">
+          <button class="recent-file selected" id="welcomeFileButton" type="button" data-demo="true">
+            <span class="file-dot"></span>
+            <span class="recent-name">welcome.md</span>
+            <span class="recent-meta">MD</span>
+          </button>
+        </div>
+        <div class="empty-state" id="emptyRecent">Открытые файлы появятся здесь</div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="status"><span class="status-dot"></span> <span id="runtimeStatus">Fallback-режим</span></div>
+        <span class="version" id="appVersion">v1.0</span>
+      </div>
+      <div class="sidebar-author">
+        Разработка: <strong>Богорад С.Б.</strong>
+        <div class="sidebar-author-links">
+          <a href="https://t.me/syntog" target="_blank" rel="noopener noreferrer">t.me/syntog</a>
+          <a href="mailto:sergey.bogorad@gmail.com">sergey.bogorad@gmail.com</a>
+        </div>
+      </div>
+    </aside>
+    <button class="drawer-backdrop" id="drawerBackdrop" type="button" aria-label="Закрыть библиотеку"></button>
+
+    <main class="main">
+      <h1 class="sr-only">Memoroid</h1>
+      <header class="topbar">
+        <div class="breadcrumbs">
+          <button class="topbar-nav" id="libraryButton" type="button">Библиотека</button>
+          <i id="crumbSeparator">/</i>
+          <strong id="fileName">Локальная библиотека</strong>
+          <span class="draft-indicator" id="draftIndicator" hidden>Есть черновик</span>
+        </div>
+        <div class="top-actions">
+          <button class="icon-button" id="themeButton" type="button" aria-label="Переключить тему" title="Переключить тему">◐</button>
+          <button class="topbar-text" id="structureButton" type="button" aria-expanded="false" hidden>Структура</button>
+          <button class="topbar-text" id="moreButton" type="button" aria-expanded="false">Ещё</button>
+        </div>
+      </header>
+
+      <section class="library-view" id="libraryView">
+        <div class="library-heading">
+          <div>
+            <div class="eyebrow">LOCAL LIBRARY</div>
+            <h1>Библиотека</h1>
+            <p>Найдите инженерный документ или подключите рабочую папку.</p>
+          </div>
+          <div class="library-primary-actions">
+            <button class="secondary-button" id="libraryFolderButton" type="button">＋ Подключить папку</button>
+            <button class="primary-button" id="libraryOpenButton" type="button">Открыть Markdown</button>
+          </div>
+        </div>
+        <div class="library-controls">
+          <label class="library-search" aria-label="Поиск по библиотеке">
+            <span aria-hidden="true">⌕</span>
+            <input id="librarySearchInput" type="search" placeholder="Поиск по имени, пути и содержимому" autocomplete="off" />
+          </label>
+          <button class="secondary-button" id="reindexButton" type="button">↻ Переиндексировать</button>
+          <button class="filter-button" id="libraryFavoritesButton" type="button" aria-pressed="false">☆ Только избранное</button>
+          <button class="filter-button" id="staleButton" type="button" aria-pressed="false">◷ Давно не открывали</button>
+          <label class="library-sort">
+            <span>Сортировка</span>
+            <select id="librarySortSelect" aria-label="Сортировка библиотеки">
+              <option value="new">Сначала новые</option>
+              <option value="old">Сначала старые</option>
+              <option value="name">По имени</option>
+            </select>
+          </label>
+          <span class="library-result-count" id="libraryResultCount"></span>
+        </div>
+        <div class="index-status" id="indexStatus" role="status">Индекс ещё не построен</div>
+        <section class="resurfacing-panel" id="resurfacingPanel" hidden aria-labelledby="resurfacingTitle">
+          <div class="resurfacing-heading">
+            <div><strong id="resurfacingTitle">Вернуться к заметкам</strong><span>Давно не открывали</span></div>
+            <span class="resurfacing-badge">локально</span>
+          </div>
+          <div class="resurfacing-list" id="resurfacingList"></div>
+        </section>
+        <div class="library-list" id="libraryList"></div>
+        <div class="library-empty" id="libraryEmpty">
+          <strong>Библиотека пока пуста</strong>
+          <span>Подключите папку или откройте отдельный Markdown-файл.</span>
+          <button class="primary-button" id="libraryDemoButton" type="button">✦ Открыть пример</button>
+        </div>
+      </section>
+
+      <section class="content-area" id="documentWorkspace" hidden>
+        <div class="document-toolbar">
+          <div class="doc-info">
+            <span class="live-dot"></span>
+            <span id="docStatus">Синхронизировано локально</span>
+          </div>
+          <div class="toolbar-actions">
+            <button class="text-button" id="favoriteButton" type="button" aria-pressed="false">☆ В избранное</button>
+            <button class="text-button" id="editButton" type="button" aria-pressed="false">✎ Редактировать</button>
+            <button class="primary-button save-button" id="saveButton" type="button" hidden>Сохранить</button>
+          </div>
+        </div>
+
+        <div class="drop-zone" id="dropZone">
+          <article class="document" id="document">
+            <div class="editor-layout" id="editorLayout" hidden>
+              <div class="editor-pane">
+                <label class="editor-label" for="editorInput">Markdown</label>
+                <textarea id="editorInput" spellcheck="false" aria-label="Редактор Markdown"></textarea>
+                <details class="markdown-help">
+                  <summary>Markdown · как оформить текст?</summary>
+                  <div class="markdown-help-grid">
+                    <code># Заголовок</code><span>Большой заголовок</span>
+                    <code>**жирный**</code><span><strong>Жирный текст</strong></span>
+                    <code>*курсив*</code><span><em>Курсивный текст</em></span>
+                    <code>- пункт</code><span>Маркированный список</span>
+                    <code>1. пункт</code><span>Нумерованный список</span>
+                    <code>&gt; цитата</code><span>Цитата</span>
+                    <code>[текст](https://...)</code><span>Ссылка</span>
+                    <code>`код`</code><span>Фрагмент кода</span>
+                  </div>
+                  <p class="markdown-help-note">Начните строку с символа и пробела. Справа результат виден сразу.</p>
+                </details>
+              </div>
+              <div class="preview-pane">
+                <div class="editor-label">Предпросмотр</div>
+                <div id="editorPreview" class="markdown-body" aria-live="polite"></div>
+              </div>
+            </div>
+            <div id="markdownOutput" class="markdown-body" aria-live="polite"></div>
+            <footer class="document-footer">
+              <span>Открыто в Memoroid</span>
+              <span id="docDate"></span>
+              <span id="wordCount">0 слов · 0 мин чтения</span>
+            </footer>
+          </article>
+          <div class="drop-hint" id="dropHint">Отпустите файл, чтобы открыть</div>
+        </div>
+      </section>
+
+      <div class="more-menu" id="moreMenu" hidden>
+        <div class="menu-group" id="documentMenuGroup">
+          <label class="menu-field" aria-label="Поиск по документу">
+            <span>Поиск</span>
+            <input id="searchInput" type="search" placeholder="В текущем документе" autocomplete="off" />
+          </label>
+          <label class="menu-field" aria-label="Теги документа">
+            <span>Теги</span>
+            <input id="tagsInput" type="text" placeholder="через запятую" />
+          </label>
+          <button class="menu-item" id="copyButton" type="button">⧉ Копировать Markdown</button>
+          <button class="menu-item" id="copyRenderedButton" type="button">⧉ Копировать без Markdown</button>
+          <button class="menu-item" id="exportDocumentButton" type="button">↗ Экспорт HTML</button>
+          <button class="menu-item" id="rawButton" type="button">{" } Показать исходник</button>
+          <button class="menu-item" id="downloadButton" type="button" hidden>↓ Скачать обновлённый файл</button>
+          <button class="menu-item" id="focusButton" type="button">⛶ Режим фокуса</button>
+        </div>
+        <div class="menu-group" id="libraryMenuGroup" hidden>
+          <button class="menu-item" id="exportButton" type="button">↑ Экспорт каталога</button>
+          <button class="menu-item" id="importButton" type="button">↓ Импорт каталога</button>
+        </div>
+      </div>
+    </main>
+
+    <aside class="outline" id="outline">
+      <div class="outline-title">В этом документе</div>
+      <nav id="outlineNav" class="outline-nav"></nav>
+      <section class="document-map" aria-labelledby="mapTitle">
+        <div class="map-heading">
+          <span id="mapTitle">Карта документа</span>
+          <span class="map-badge">локально</span>
+        </div>
+        <div id="documentStats" class="document-stats"></div>
+        <div id="documentMap" class="document-map-bars" aria-label="Объём разделов документа"></div>
+      </section>
+      <div class="shortcut-card">
+        <span class="shortcut-icon">⌘</span>
+        <div><strong>Быстрый поиск</strong><small>Нажмите <kbd>/</kbd> в любом месте</small></div>
+      </div>
+    </aside>
+  </div>
+  <dialog class="conflict-dialog" id="conflictDialog">
+    <form method="dialog">
+      <h2>Файл изменён вне Memoroid</h2>
+      <p>Исходник на диске уже отличается от открытой версии. Чтобы не потерять изменения, запись отменена.</p>
+      <div class="dialog-actions">
+        <button class="secondary-button" value="cancel">Оставить черновик</button>
+        <button class="secondary-button" id="conflictDownloadButton" value="download">Скачать черновик</button>
+        <button class="primary-button" id="conflictReloadButton" value="reload">Загрузить версию с диска</button>
+      </div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="wasm/memoroid-index.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

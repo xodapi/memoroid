@@ -110,16 +110,38 @@ pwsh -File .\build-single-html.ps1
 
 Результат: `memoroid-single.html`.
 
+### Дорожная карта
+
+Здесь только то, что реально берём в работу следующим. Всё остальное лежит
+в `.scratch/` и не является обещанием.
+
+**v1.2 — в работе**
+
+- Печать и PDF: `@media print` скрывает всю обвязку, на бумагу уходит только
+  документ с подписью.
+- Удаление подключённой папки из каталога, с подтверждением.
+- Настраиваемые исключения папок поверх расширенного списка по умолчанию.
+- Позиция чтения: запоминается в рамках сессии, восстанавливается при
+  возврате к документу.
+- Горячие клавиши: `⌘O` открыть, `⌘P` печать, `⌘E` правка, `⌘S` сохранить,
+  `/` поиск, `Esc` закрыть.
+- Тесты на чистую логику и проверка синтаксиса при сборке.
+
+**Дальше, без обязательств**
+
+- Подсветка текущего раздела в оглавлении при прокрутке.
+- Обновление подключения папки без переподключения.
+
+**Сознательно не делаем:** плагины, граф связей, wikilinks, календарь-сетку,
+обязательные метаданные, облачную синхронизацию и AI внутри приложения.
+Memoroid не должен стать «ещё одним Obsidian».
+
 ### Принципы
 
 1. Сначала — быстрый и надёжный просмотрщик.
 2. Каждая функция необязательна и работает локально.
 3. Markdown-файл — первоисточник. Приложение не меняет его без явной команды.
 4. Не добавляем функцию только потому, что она красиво выглядит в демо.
-
-**Сознательно не делаем:** плагины, граф связей, wikilinks, календарь-сетку,
-обязательные метаданные, облачную синхронизацию и AI внутри приложения.
-Memoroid не должен стать «ещё одним Obsidian».
 
 ---
 
@@ -179,6 +201,27 @@ Result: `memoroid-single.html`.
 3. The Markdown file is the source of truth. The app does not modify it
    without an explicit command.
 4. Do not add a feature just because it looks good in a demo.
+
+### Roadmap
+
+Only what is actually being taken up next. Everything else lives in
+`.scratch/` and is not a promise.
+
+**v1.2 — in progress**
+
+- Print and PDF: `@media print` hides all chrome, only the document and a
+  footer caption reach paper.
+- Removing a connected folder from the catalog, with confirmation.
+- Configurable folder excludes, on top of an expanded built-in list.
+- Reading position: remembered for the session and restored on return.
+- Shortcuts: `⌘O` open, `⌘P` print, `⌘E` edit, `⌘S` save, `/` search,
+  `Esc` dismiss.
+- Tests over pure logic plus a syntax check during the build.
+
+**Later, without commitment**
+
+- Highlighting the current section in the outline while scrolling.
+- Refreshing a folder connection without reconnecting.
 
 **Deliberately not doing:** plugins, graph view, wikilinks, a calendar grid,
 mandatory metadata, cloud sync, and AI inside the app. Memoroid should not

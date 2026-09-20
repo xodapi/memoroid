@@ -1,0 +1,35 @@
+Add v1.2: promised features, reading friction, and tests
+
+Completes the work the README promised and removes the friction of
+re-reading a note, then adds automated checks so a broken build cannot
+be shipped unnoticed again (v1.1 went out with a stray CSS brace that
+disabled all image styling).
+
+Promised work:
+- Print/PDF: @media print hides all chrome, leaving the document and a
+  footer caption with filename, date and word count. Shortcut Cmd+P.
+- Remove a connected folder: new "Connected folders" section in the
+  library showing name, file count and a Remove button. Only the catalog
+  entry is deleted; disk files, drafts, favorites and recents survive.
+- Configurable folder excludes: expanded built-in list plus a field in
+  the More menu, layered on top of the defaults.
+
+Reading friction:
+- Reading position is remembered per Page ID for the session and restored
+  on return. Deliberately not persisted across restarts.
+- Shortcuts Cmd+P, Cmd+E and Cmd+S added; Cmd+S states plainly when
+  writing is unavailable and downloads a copy.
+- Fixed "/" stealing focus while typing a slash into another input.
+- selectDocument now reuses the stored Page ID so revisiting a document
+  keeps its reading position.
+
+Infrastructure:
+- 41 tests over pure logic (lists, tables, dates, front matter, tasks,
+  folder walking, excludes, reading position) run via node:test with a
+  stubbed DOM. app.js is not refactored into modules.
+- build-single-html.ps1 now runs node --check, verifies that inlining
+  actually happened, and prints usage with -Help.
+
+Roadmap returned to the README, listing only what is really next.
+
+Co-authored-by: factory-droid[bot] <138933559+factory-droid[bot]@users.noreply.github.com>

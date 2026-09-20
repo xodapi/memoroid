@@ -10,3 +10,6 @@
 Thumbs.db
 *.tmp
 *.log
+# Служебные файлы релиза и коммитов
+.release-notes.md
+.commit-msg.txt

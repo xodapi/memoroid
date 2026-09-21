@@ -96,7 +96,10 @@ async function initWasmIndexer() {
   } catch { /* optional acceleration; JavaScript remains the fallback */ }
 }
 function countWords(source) {
-  const normalized = normalizeSearchText(source);
+  const text = String(source || '');
+  const front = FRONT_MATTER_PATTERN.exec(text.replace(/^\uFEFF/, ''));
+  const body = (front ? text.slice(front[0].length) : text).replace(/```[\s\S]*?```/g, ' ');
+  const normalized = normalizeSearchText(body);
   return wasmWordCounter?.(normalized) ?? normalized.split(' ').filter(Boolean).length;
 }
 function normalizeSearchText(value) {
@@ -697,6 +700,48 @@ function slugify(value, used) {
   return count === 1 ? base : `${base}-${count}`;
 }
 
+let headingObserver = null;
+
+function markCurrentHeading(id) {
+  const nav = $('outlineNav');
+  if (!nav) return;
+  [...nav.querySelectorAll('a')].forEach((link) => {
+    link.classList.toggle('current', link.getAttribute('href') === `#${id}`);
+  });
+}
+
+/* Highlights the section being read: the last heading that has scrolled past
+ * a line set a third of the way down the viewport. Recomputed on scroll
+ * rather than observed, because a document can be scrolled to a point where
+ * no heading is inside the viewport at all. */
+function currentHeadingId(headings) {
+  const targets = headings
+    .map((heading) => document.getElementById(heading.id))
+    .filter(Boolean);
+  if (!targets.length) return '';
+  const line = window.scrollY + window.innerHeight / 3;
+  let current = targets[0];
+  targets.forEach((target) => {
+    if (target.getBoundingClientRect().top + window.scrollY <= line) current = target;
+  });
+  return current.id;
+}
+
+function refreshCurrentHeading(headings) {
+  markCurrentHeading(currentHeadingId(headings));
+}
+
+function trackCurrentHeading(headings) {
+  if (headingObserver) { window.removeEventListener('scroll', headingObserver); headingObserver = null; }
+  const nav = $('outlineNav');
+  if (!nav) return;
+  if (!headings.length) { markCurrentHeading(''); return; }
+  refreshCurrentHeading(headings);
+  const onScroll = () => refreshCurrentHeading(headings);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  headingObserver = onScroll;
+}
+
 function renderDocumentMap(source, headings) {
   const plain = source.replace(/```[\s\S]*?```/g, ' ').replace(/[`*_>#|[\]()]/g, ' ');
   const words = countWords(plain);
@@ -891,6 +936,7 @@ function renderMarkdown(source) {
   });
   $('outlineNav').innerHTML = headings.map((h) =>
     `<a href="#${h.id}" class="${h.level > 1 ? 'sub' : ''}">${escapeHtml(h.text)}</a>`).join('');
+  trackCurrentHeading(headings);
   renderDocumentMap(source, headings);
   const words = countWords(source);
   $('wordCount').textContent = `${words} слов · ${Math.max(1, Math.ceil(words / 265))} мин чтения`;

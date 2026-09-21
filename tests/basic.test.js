@@ -56,7 +56,7 @@ function loadApp() {
     'indexedDB', 'Intl', 'TextEncoder', 'globalThis', 'setTimeout', 'clearTimeout',
     `${source}\nreturn { escapeHtml, inline, renderMarkdown, frontMatterMeta, parseDateValue, filenameDate, documentDate, formatDocumentDate, documentTitle, toggleTaskLine, searchTokens, normalizeSearchText, countWords, getOutput: () => document.getElementById('markdownOutput').innerHTML };`
   );
-  const win = { matchMedia: () => ({ matches: false }) };
+  const win = { matchMedia: () => ({ matches: false }), scrollY: 0, innerHeight: 900, addEventListener() {}, removeEventListener() {} };
   const storage = {
     getItem: () => null,
     setItem() {},
@@ -338,8 +338,7 @@ test('custom excludes are added on top of the built-in list', () => {
 test('a malformed settings value cannot break the exclude list', () => {
   const { excludedFolderNames } = loadExcludes({ excludes: 'not-an-array' });
   assert.doesNotThrow(() => excludedFolderNames());
-  assert.ok(excludedFolderNames().has('.git'));
-});
+  assert.ok(excludedFolderNames().has('.git'));});
 
 test('excluding a folder prevents it from being walked', async () => {
   const src = fs.readFileSync(APP_PATH, 'utf8');
@@ -367,6 +366,78 @@ test('excluding a folder prevents it from being walked', async () => {
   assert.ok(paths.includes('notes/keep.md'), 'ordinary folders are walked');
   assert.ok(paths.includes('top.md'));
   assert.ok(!paths.some((p) => p.startsWith('node_modules')), 'excluded folders are skipped');
+});
+
+/* --- Word count -------------------------------------------------------- */
+test('code fences and front matter are not counted as prose', () => {
+  assert.strictEqual(app.countWords('два слова тут'), 3);
+  assert.strictEqual(app.countWords('два слова\n\n```js\nconst x = 1;\nconst y = 2;\n```'), 2);
+  assert.strictEqual(app.countWords('---\ntitle: Мой заголовок\n---\n\nдва слова'), 2);
+});
+
+test('markdown syntax is not counted as words', () => {
+  assert.strictEqual(app.countWords('# Заголовок'), 1);
+  assert.strictEqual(app.countWords('# Заголовок **жирный** текст'), 3);
+  assert.strictEqual(app.countWords(''), 0);
+});
+
+/* --- Outline current section ------------------------------------------- */
+test('the outline marks the heading that is currently being read', () => {
+  const links = ['first', 'second'].map((id) => {
+    const link = makeElement(`link-${id}`);
+    link.getAttribute = () => `#${id}`;
+    let current = false;
+    link.classList.contains = (name) => name === 'current' && current;
+    link.classList.toggle = (name, on) => { if (name === 'current') current = Boolean(on); };
+    return link;
+  });
+  const nav = { querySelectorAll: () => links };
+  /* first sits at the very top, second far below it. */
+  const rects = { first: 0, second: 5000 };
+  const headings = ['first', 'second'].map((id) => ({
+    id, getBoundingClientRect: () => ({ top: rects[id] - win.scrollY })
+  }));
+  const document = { getElementById: (id) => (id === 'outlineNav' ? nav : headings.find((h) => h.id === id)) };
+  const win = { scrollY: 0, innerHeight: 900, addEventListener() {}, removeEventListener() {} };
+  const listeners = [];
+  win.addEventListener = (name, handler) => { if (name === 'scroll') listeners.push(handler); };
+  win.removeEventListener = () => {};
+
+  const src = fs.readFileSync(APP_PATH, 'utf8');
+  const start = src.indexOf('let headingObserver');
+  const end = src.indexOf('function renderDocumentMap');
+  const factory = new Function('$', 'document', 'window',
+    `${src.slice(start, end)}; return { trackCurrentHeading, markCurrentHeading };`);
+  const outline = factory((id) => (id === 'outlineNav' ? nav : null), document, win);
+
+  outline.trackCurrentHeading([{ id: 'first' }, { id: 'second' }]);
+  assert.ok(links[0].classList.contains('current'), 'the top section starts out current');
+  assert.ok(!links[1].classList.contains('current'));
+
+  assert.strictEqual(listeners.length, 1, 'scrolling is tracked');
+  win.scrollY = 5200;
+  listeners[0]();
+  assert.ok(links[1].classList.contains('current'), 'scrolling past a heading moves the highlight');
+  assert.ok(!links[0].classList.contains('current'), 'the previous highlight is cleared');
+});
+
+test('without any headings the outline stays unhighlighted', () => {
+  const link = makeElement('link');
+  link.getAttribute = () => '#first';
+  let current = true;
+  link.classList.toggle = (name, on) => { if (name === 'current') current = Boolean(on); };
+  link.classList.contains = (name) => name === 'current' && current;
+  const nav = { querySelectorAll: () => [link] };
+  const document = { getElementById: (id) => (id === 'outlineNav' ? nav : null) };
+  const win = { scrollY: 0, innerHeight: 900, addEventListener() {}, removeEventListener() {} };
+
+  const src = fs.readFileSync(APP_PATH, 'utf8');
+  const start = src.indexOf('let headingObserver');
+  const end = src.indexOf('function renderDocumentMap');
+  const factory = new Function('$', 'document', 'window',
+    `${src.slice(start, end)}; return { trackCurrentHeading };`);
+  factory((id) => (id === 'outlineNav' ? nav : null), document, win).trackCurrentHeading([]);
+  assert.ok(!link.classList.contains('current'), 'no stale highlight remains');
 });
 
 /* --- Reading position -------------------------------------------------- */
@@ -421,6 +492,7 @@ test('search normalisation folds case and the Russian yo', () => {
 });
 
 test('word counting works without the WASM module', () => {
+
   assert.ok(app.countWords('один два три') >= 3);
 });
 

@@ -115,7 +115,10 @@ pwsh -File .\build-single-html.ps1
 Здесь только то, что реально берём в работу следующим. Всё остальное лежит
 в `.scratch/` и не является обещанием.
 
-**v1.2 — в работе**
+**Следующее: долгов нет.** v1.2 закрыт полностью. Новые пункты попадают
+сюда только когда действительно берутся в работу.
+
+**Сделано в v1.2**
 
 - Печать и PDF: `@media print` скрывает всю обвязку, на бумагу уходит только
   документ с подписью.
@@ -124,17 +127,27 @@ pwsh -File .\build-single-html.ps1
 - Позиция чтения: запоминается в рамках сессии, восстанавливается при
   возврате к документу.
 - Горячие клавиши: `⌘O` открыть, `⌘P` печать, `⌘E` правка, `⌘S` сохранить,
-  `/` поиск, `Esc` закрыть.
-- Тесты на чистую логику и проверка синтаксиса при сборке.
-
-**Дальше, без обязательств**
-
+  `/` поиск, `Esc` закрыть. Исправлен перехват `/` из других полей.
 - Подсветка текущего раздела в оглавлении при прокрутке.
-- Обновление подключения папки без переподключения.
+- Точный подсчёт слов: код-блоки и front matter не считаются как prose.
+- Переиндексация заново обходит подключённые папки, без переподключения.
+- 53 теста на чистую логику и проверка синтаксиса при сборке.
 
 **Сознательно не делаем:** плагины, граф связей, wikilinks, календарь-сетку,
 обязательные метаданные, облачную синхронизацию и AI внутри приложения.
 Memoroid не должен стать «ещё одним Obsidian».
+
+### Что сделано в v1.2
+
+- Печать и PDF: `@media print` скрывает всю обвязку, на бумагу уходят только документ и подпись.
+- Удаление подключённой папки из каталога, с подтверждением.
+- Настраиваемые исключения папок поверх расширенного встроенного списка.
+- Позиция чтения запоминается на сессию и восстанавливается при возврате.
+- Горячие клавиши: `⌘O`, `⌘P`, `⌘E`, `⌘S`, `/`, `Esc`. Исправлен перехват `/`.
+- Подсветка текущего раздела в оглавлении при прокрутке.
+- Точный подсчёт слов: код-блоки и front matter не считаются как prose.
+- Переиндексация заново обходит подключённые папки, без переподключения.
+- 53 теста на чистую логику и проверка синтаксиса при сборке.
 
 ### Принципы
 
@@ -207,7 +220,10 @@ Result: `memoroid-single.html`.
 Only what is actually being taken up next. Everything else lives in
 `.scratch/` and is not a promise.
 
-**v1.2 — in progress**
+**Next: nothing owed.** v1.2 is complete. New items land here only once
+they are actually being taken up.
+
+**Done in v1.2**
 
 - Print and PDF: `@media print` hides all chrome, only the document and a
   footer caption reach paper.
@@ -215,8 +231,11 @@ Only what is actually being taken up next. Everything else lives in
 - Configurable folder excludes, on top of an expanded built-in list.
 - Reading position: remembered for the session and restored on return.
 - Shortcuts: `⌘O` open, `⌘P` print, `⌘E` edit, `⌘S` save, `/` search,
-  `Esc` dismiss.
-- Tests over pure logic plus a syntax check during the build.
+  `Esc` dismiss. Fixed `/` stealing focus from other inputs.
+- Highlighting the section being read as you scroll.
+- Accurate word count: code fences and front matter are not prose.
+- Reindexing re-walks connected folders, with no reconnect needed.
+- 53 tests over pure logic plus a syntax check during the build.
 
 **Later, without commitment**
 

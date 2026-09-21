@@ -981,9 +981,6 @@ function rememberScrollPosition() {
   if (!currentPageId || $('appShell').classList.contains('library-state')) return;
   scrollPositions.set(currentPageId, window.scrollY);
 }
-function removeScrollPosition(pageId) {
-  if (pageId) scrollPositions.delete(pageId);
-}
 function restoreScrollPosition() {
   const saved = scrollPositions.get(currentPageId);
   window.scrollTo(0, typeof saved === 'number' ? saved : 0);
@@ -1216,6 +1213,7 @@ async function reindexLibrary() {
   $('reindexButton').disabled = true;
   $('indexStatus').textContent = 'Переиндексация…';
   try {
+    const refreshed = await rescanConnectedFolders();
     const entries = await getLibraryEntries();
     const indexed = [];
     let skipped = 0;
@@ -1230,7 +1228,8 @@ async function reindexLibrary() {
       indexed.push({ ...entry, pageId: entry.pageId || createPageId(), indexedAt: Date.now() });
     }
     memorySearchIndex = { entries: indexed, builtAt: Date.now(), skipped };
-    $('indexStatus').textContent = skipped ? `Индекс обновлён, пропущено: ${skipped}` : `Индекс обновлён: ${indexed.length} документов`;
+    const note = refreshed.failed ? `, недоступно папок: ${refreshed.failed}` : '';
+    $('indexStatus').textContent = `Индекс обновлён: ${indexed.length} документов${note}`;
   } catch {
     $('indexStatus').textContent = 'Не удалось построить индекс';
   } finally {
@@ -1238,6 +1237,32 @@ async function reindexLibrary() {
     $('reindexButton').disabled = false;
     renderLibrary();
   }
+}
+
+/* Re-walks every stored folder so files added or removed since the last scan
+ * appear without the user reconnecting the folder. Folders whose permission
+ * was revoked are reported, not silently dropped. */
+async function rescanConnectedFolders() {
+  if (!supportsFolderAccess()) return { folders: 0, files: 0, failed: 0 };
+  let folders;
+  try { folders = await readCatalogFolders(); } catch { return { folders: 0, files: 0, failed: 0 }; }
+  let files = 0;
+  let failed = 0;
+  for (const folder of folders) {
+    try {
+      if (folder.handle.queryPermission && await folder.handle.queryPermission({ mode: 'read' }) !== 'granted') {
+        failed += 1; continue;
+      }
+      const existingFiles = await readCatalogFiles();
+      const existingById = new Map(existingFiles
+        .filter((file) => file.connectionId === folder.id).map((file) => [file.id, file]));
+      const found = await walkMarkdownFiles(folder.handle, folder.id, '', folder.name, existingById);
+      await saveCatalogFolder({ ...folder, lastIndexedAt: Date.now() });
+      await replaceFolderFiles(folder.id, found);
+      files += found.length;
+    } catch { failed += 1; }
+  }
+  return { folders: folders.length, files, failed };
 }
 async function renderLibrary(recentEntries = null) {
   const list = $('libraryList');

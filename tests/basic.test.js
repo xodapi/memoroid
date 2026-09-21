@@ -90,6 +90,38 @@ test('unknown front matter keys are ignored', () => {
   assert.deepStrictEqual(meta.tags, []);
 });
 
+test('a hash inside a title value is kept', () => {
+  assert.strictEqual(app.frontMatterMeta('---\ntitle: Fix #42 report\n---\nx').title, 'Fix #42 report');
+  assert.strictEqual(app.frontMatterMeta('---\ntitle: Note #7\n---\nx').title, 'Note #7');
+  assert.strictEqual(app.frontMatterMeta('---\ntitle: bug #ABC-1\n---\nx').title, 'bug #ABC-1');
+});
+
+test('a real comment is still stripped, so tags keep working', () => {
+  assert.strictEqual(app.frontMatterMeta('---\ntitle: Hello\n# comment\n---\nx').title, 'Hello');
+  assert.deepStrictEqual(app.frontMatterMeta('---\ntags: a, b # my tags\n---\nx').tags, ['a', 'b']);
+  assert.strictEqual(app.frontMatterMeta('---\ndate: 2026-09-21\n---\nx').date !== null, true);
+});
+
+test('a quoted title with a hash round-trips', () => {
+  assert.strictEqual(app.frontMatterMeta('---\ntitle: "Note #7"\n---\nx').title, 'Note #7');
+});
+
+test('front matter is consumed as metadata and never rendered into the body', () => {
+  app.renderMarkdown('---\ntitle: Fix #42 report\ntags: a, b\n---\n\n# Body');
+  const html = app.getOutput();
+  assert.ok(!html.includes('<hr>'), html);
+  assert.ok(!html.includes('title: Fix #42 report'), html);
+  assert.ok(html.includes('<h1'), html);
+  assert.ok(html.includes('Body'), html);
+});
+
+test('a document without front matter is rendered unchanged', () => {
+  app.renderMarkdown('# Body');
+  const html = app.getOutput();
+  assert.ok(html.includes('<h1'), html);
+  assert.ok(html.includes('Body'), html);
+});
+
 test('tags are parsed from list, inline and bracket forms', () => {
   const list = app.frontMatterMeta('---\ntags:\n  - alpha\n  - beta\n---\nx');
   const inline = app.frontMatterMeta('---\ntags: gamma, delta\n---\nx');
@@ -156,6 +188,25 @@ test('user HTML is escaped and script payloads are inert', () => {
 test('javascript and data image sources are rejected', () => {
   assert.ok(!app.inline('![a](javascript:alert(1))').includes('<img'));
   assert.ok(!app.inline('![a](data:text/html;base64,x)').includes('<img'));
+});
+
+test('unknown URL schemes are rejected, so vbscript never reaches src', () => {
+  const blocked = ['vbscript:msgbox(1)', 'file:///etc/passwd', 'jar:http://x!/y', 'smb://host/share'];
+  blocked.forEach((source) => {
+    assert.ok(!app.inline(`![a](${source})`).includes('<img'), source);
+  });
+});
+
+test('safe image sources are still allowed', () => {
+  assert.ok(app.inline('![a](img/photo.png)').includes('src="img/photo.png"'));
+  assert.ok(app.inline('![a](https://example.com/i.png)').includes('https://example.com/i.png'));
+  assert.ok(app.inline('![a](data:image/png;base64,AA)').includes('data:image/png'));
+});
+
+test('an image source is escaped exactly once', () => {
+  assert.strictEqual(app.inline('![a](photo&copy.png)'), '<img src="photo&amp;copy.png" alt="a" loading="lazy">');
+  assert.strictEqual(app.inline('![a](plain.png)'), '<img src="plain.png" alt="a" loading="lazy">');
+  assert.strictEqual((app.inline('![a](a&b.png)').match(/src="([^"]*)"/) || [])[1], 'a&amp;b.png');
 });
 
 test('snake_case identifiers are not turned into emphasis', () => {

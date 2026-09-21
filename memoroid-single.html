@@ -1003,6 +1003,19 @@ function escapeHtml(value) {
   }[char]));
 }
 
+function decodeEscaped(value) {
+  return String(value).replace(/&(?:amp|lt|gt|quot|#39);/g, (entity) => ({
+    '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'"
+  }[entity]));
+}
+
+function isSafeImageSource(source) {
+  const trimmed = String(source).trim();
+  if (!trimmed) return false;
+  if (/^(?:https?:|data:image\/|blob:)/i.test(trimmed)) return true;
+  return !/^[a-z][a-z0-9+.-]*:/i.test(trimmed);
+}
+
 function inline(text) {
   const codes = [];
   const autolinks = [];
@@ -1012,7 +1025,7 @@ function inline(text) {
     return `\u0000CODE${codes.length - 1}\u0000`;
   });
   result = result.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (match, alt, source) => {
-    if (!/^(?:javascript:|data:)/i.test(source)) {
+    if (isSafeImageSource(decodeEscaped(source))) {
       return `\u0000IMG\u0000${source}\u0000IMG\u0000${alt}\u0000IMG\u0000`;
     }
     return match;
@@ -1033,7 +1046,7 @@ function inline(text) {
   result = result.replace(/~~([^~]+)~~/g, '<del>$1</del>');
   result = result.replace(/\u0000LINK(\d+)\u0000/g, (match, index) => autolinks[Number(index)]);
   result = result.replace(/\u0000IMG\u0000([^\u0000]*)\u0000IMG\u0000([^\u0000]*)\u0000IMG\u0000/g,
-    (match, source, alt) => `<img src="${escapeHtml(source)}" alt="${alt}" loading="lazy">`);
+    (match, source, alt) => `<img src="${source}" alt="${alt}" loading="lazy">`);
   result = result.replace(/\u0000CODE(\d+)\u0000/g, (match, index) => `<code>${codes[Number(index)]}</code>`);
   return result;
 }
@@ -1131,7 +1144,9 @@ function attachTaskHandlers() {
   });
 }
 function renderMarkdown(source) {
-  const lines = source.replace(/\r/g, '').split('\n');
+  const text = typeof source === 'string' ? source.replace(/^\uFEFF/, '') : '';
+  const front = FRONT_MATTER_PATTERN.exec(text);
+  const lines = (front ? text.slice(front[0].length) : text).replace(/\r/g, '').split('\n');
   const output = [];
   const headings = [];
   const usedSlugs = {};
@@ -1389,6 +1404,7 @@ function parseDateValue(value) {
   }
   return null;
 }
+
 function frontMatterMeta(source) {
   const empty = { present: false, title: '', date: null, tags: [] };
   const text = typeof source === 'string' ? source.replace(/^\uFEFF/, '') : '';
@@ -1401,7 +1417,7 @@ function frontMatterMeta(source) {
       .filter(Boolean).forEach((tag) => { if (!meta.tags.includes(tag)) meta.tags.push(tag); });
   };
   match[1].split(/\r?\n/).forEach((rawLine) => {
-    const line = rawLine.replace(/\s+#.*$/, '').trim();
+    const line = rawLine.replace(/\s+#(?:\s.*)?$/g, '').trim();
     if (!line || line.startsWith('#')) return;
     const listItem = /^[-*]\s+(.+)$/.exec(line);
     if (listItem) {
